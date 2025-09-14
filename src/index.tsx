@@ -8,6 +8,8 @@ interface AladinLiteProps {
   options?: Record<string, any>;
   onReady?: (instance: any) => void;
   className?: string;
+  target?: string;
+  fov?: number;
 }
 
 // Define the interface for the Aladin Lite instance
@@ -24,7 +26,7 @@ export interface AladinLiteHandle {
   getAladinInstance: () => AladinInstance | null;
 }
 
-const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options, onReady, className }, ref) => {
+const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options, onReady, className, target, fov }, ref) => {
   const aladinRef = useRef<HTMLDivElement>(null);
   const aladinInstanceRef = useRef<AladinInstance | null>(null);
 
@@ -79,6 +81,18 @@ const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options
       // }
     };
   }, [options, onReady]);
+
+  useEffect(() => {
+    if (aladinInstanceRef.current && target) {
+      aladinInstanceRef.current.gotoObject(target);
+    }
+  }, [target]);
+
+  useEffect(() => {
+    if (aladinInstanceRef.current && fov) {
+      aladinInstanceRef.current.setFoV(fov);
+    }
+  }, [fov]);
 
   useImperativeHandle(ref, () => ({
     getAladinInstance: () => aladinInstanceRef.current,

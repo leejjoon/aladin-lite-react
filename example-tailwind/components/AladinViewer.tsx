@@ -10,23 +10,15 @@ export interface AladinViewerApi {
 
 interface AladinViewerProps {
   onReady?: () => void;
-  onApiReady?: (api: AladinViewerApi) => void;
+  target?: string;
+  fov?: number;
 }
 
-const AladinViewer = ({ onReady, onApiReady }: AladinViewerProps) => {
+const AladinViewer = ({ onReady, target, fov }: AladinViewerProps) => {
   const aladinRef = useRef<AladinLiteReactHandle>(null);
 
   const handleOnReady = (aladin: AladinInstance) => {
     if (aladin) {
-      // Expose the API to the parent component via callback
-      if (onApiReady) {
-        onApiReady({
-          gotoObject: (target: string) => {
-            aladin.gotoObject(target);
-          }
-        });
-      }
-
       // Create a new HiPS survey from the configured URL
       const survey = aladin.createImageSurvey(
         'custom-hips',
@@ -47,7 +39,7 @@ const AladinViewer = ({ onReady, onApiReady }: AladinViewerProps) => {
 
   return (
     <div className="w-full h-full">
-      <AladinLiteReact ref={aladinRef} onReady={handleOnReady} />
+      <AladinLiteReact ref={aladinRef} onReady={handleOnReady} target={target} fov={fov} />
     </div>
   );
 };

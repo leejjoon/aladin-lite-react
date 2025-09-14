@@ -1,21 +1,19 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import type { AladinViewerApi } from '@/components/AladinViewer';
 
 const AladinViewer = dynamic(() => import('@/components/AladinViewer'), {
   ssr: false,
 });
 
 export default function HomePage() {
-  // Use a ref to store the API object from the child component.
-  // A ref is better than state here because the API object itself is stable.
-  const aladinApiRef = useRef<AladinViewerApi | null>(null);
   const [isAladinReady, setIsAladinReady] = useState(false);
+  const [target, setTarget] = useState('');
+  const [fov, setFov] = useState(60);
 
   const handleGotoClick = () => {
-    aladinApiRef.current?.gotoObject('M31');
+    setTarget('M31');
   };
 
   return (
@@ -25,17 +23,30 @@ export default function HomePage() {
         <button
           onClick={handleGotoClick}
           disabled={!isAladinReady}
-          className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:bg-gray-500 disabled:cursor-not-allowed"
+          className="w-full bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded disabled:bg-gray-500 disabled:cursor-not-allowed"
         >
           Go to M31
         </button>
+        <div className="mt-4">
+          <label htmlFor="fov-slider" className="block text-sm font-medium">Field of View: {fov.toFixed(2)}°</label>
+          <input
+            id="fov-slider"
+            type="range"
+            min="0.01"
+            max="90"
+            step="0.01"
+            value={fov}
+            onChange={(e) => setFov(parseFloat(e.target.value))}
+            className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+            disabled={!isAladinReady}
+          />
+        </div>
       </aside>
       <main className="flex-1">
         <AladinViewer
+          target={target}
+          fov={fov}
           onReady={() => setIsAladinReady(true)}
-          onApiReady={(api) => {
-            aladinApiRef.current = api;
-          }}
         />
       </main>
     </div>
