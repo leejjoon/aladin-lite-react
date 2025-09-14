@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import "aladin-lite-react/dist/aladin.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,9 +17,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="stylesheet" href="/vendor/aladin-lite.css" />
-      </head>
       <body className={inter.className}>{children}</body>
     </html>
   );
