@@ -10,7 +10,12 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install:example": "npm install --prefix example",
+    "dev:example": "npm run dev --prefix example",
+    "build:example": "npm run build --prefix example",
+    "link:example": "npm link aladin-lite-react --prefix example",
+    "link:example:correct": "cd example && npm link aladin-lite-react"
   },
   "keywords": [
     "react",
@@ -23,15 +28,15 @@
   "license": "ISC",
   "peerDependencies": {
     "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "react-dom": ">=18.0.0",
+    "aladin-lite": ">=3.2.1"
   },
-  "dependencies": {
-    "aladin-lite": "^3.2.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/react": "^18.3.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "aladin-lite": ">=3.2.1"
   }
 }
