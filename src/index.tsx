@@ -3,10 +3,6 @@
 
 import React, { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 
-// Aladin Lite is a UMD module, so we need to use a dynamic import
-// and it attaches itself to the window object.
-let A: any;
-
 // Define the props for our component
 interface AladinLiteProps {
   options?: Record<string, any>;
@@ -36,6 +32,7 @@ const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options
     if (typeof window === 'undefined') return;
 
     let isMounted = true;
+    let A: any;
 
     const initialize = async () => {
       if (aladinRef.current && !aladinInstanceRef.current) {

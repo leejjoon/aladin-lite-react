@@ -15,7 +15,11 @@
     "dev:example": "npm run dev --prefix example",
     "build:example": "npm run build --prefix example",
     "link:example": "npm link aladin-lite-react --prefix example",
-    "link:example:correct": "cd example && npm link aladin-lite-react"
+    "link:example:correct": "cd example && npm link aladin-lite-react",
+    "install:example-tailwind": "npm install --prefix example-tailwind",
+    "dev:example-tailwind": "npm run dev --prefix example-tailwind",
+    "build:example-tailwind": "npm run build --prefix example-tailwind",
+    "link:example-tailwind": "cd example-tailwind && npm link aladin-lite-react"
   },
   "keywords": [
     "react",
@@ -27,16 +31,16 @@
   "author": "",
   "license": "ISC",
   "peerDependencies": {
+    "aladin-lite": "^3.0.0",
     "react": ">=18.0.0",
-    "react-dom": ">=18.0.0",
-    "aladin-lite": ">=3.2.1"
+    "react-dom": ">=18.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+  },
   "devDependencies": {
     "@types/react": "^18.3.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "typescript": "^5.5.3",
-    "aladin-lite": ">=3.2.1"
+    "typescript": "^5.5.3"
   }
 }
