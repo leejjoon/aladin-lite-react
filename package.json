@@ -9,7 +9,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp src/aladin.css dist/aladin.css && cp -r src/assets dist/assets",
     "test": "echo \"Error: no test specified\" && exit 1",
     "install:example": "npm install --prefix example",
     "dev:example": "npm run dev --prefix example",
