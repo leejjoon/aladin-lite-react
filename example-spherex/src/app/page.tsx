@@ -12,6 +12,8 @@ import {
   DEFAULT_COORDINATE_FRAME,
   DEFAULT_TARGET
 } from '@/config';
+import Tooltip from '@/components/Tooltip';
+import { channelMinMax } from '@/channel_definition';
 
 const AladinViewer = dynamic(() => import('@/components/AladinViewer'), {
   ssr: false,
@@ -134,18 +136,21 @@ export default function HomePage() {
                 <div className="flex flex-col space-y-1">
                   {spectralChannels[band as keyof typeof spectralChannels].map((channel) => {
                     const isSelected = selectedChannel?.band === band && selectedChannel?.channel === channel;
+                    const channelInfo = channelMinMax[channel as keyof typeof channelMinMax];
+                    const tooltip = channelInfo ? `${channelInfo[0].toFixed(3)}-${channelInfo[1].toFixed(3)}` : '';
                     return (
-                      <button
-                        key={channel}
-                        className={`text-sm py-1 px-2 rounded ${
-                          isSelected
-                            ? 'bg-cyan-500 text-white'
-                            : 'bg-gray-700 hover:bg-gray-600 text-white'
-                        }`}
-                        onClick={() => handleChannelClick(band, channel)}
-                      >
-                        {channel}
-                      </button>
+                      <Tooltip key={channel} text={tooltip}>
+                        <button
+                          className={`w-full text-sm py-1 px-2 rounded ${
+                            isSelected
+                              ? 'bg-cyan-500 text-white'
+                              : 'bg-gray-700 hover:bg-gray-600 text-white'
+                          }`}
+                          onClick={() => handleChannelClick(band, channel)}
+                        >
+                          {channel}
+                        </button>
+                      </Tooltip>
                     );
                   })}
                 </div>
