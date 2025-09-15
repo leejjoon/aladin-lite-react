@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { SurveyOptions } from 'aladin-lite-react';
-import { DEFAULT_HIPS_SURVEY, SPECTRAL_CHANNEL_URL_TEMPLATE } from '@/config';
+import { DEFAULT_HIPS_SURVEY, SPECTRAL_CHANNEL_URL_TEMPLATE, SPECTRAL_CHANNEL_URL_FORMAT } from '@/config';
 
 const AladinViewer = dynamic(() => import('@/components/AladinViewer'), {
   ssr: false,
@@ -45,11 +45,12 @@ export default function HomePage() {
       .replace('{channel:03d}', channelString);
 
     const newLayer: SurveyOptions = {
-      id: `spectral-${band}-${channel}`,
-      name: `Spectral ${band} ${channel}`,
+      id: `SPH-${band}-${channel}`,
+      name: `S ${band} ${channel}`,
       url,
       frame: 'equatorial',
       order: 10,
+      options: {imgFormat: SPECTRAL_CHANNEL_URL_FORMAT},
     };
 
     setLayers([newLayer]);

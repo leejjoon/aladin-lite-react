@@ -45,6 +45,12 @@ export interface SurveyOptions {
   options?: {
     opacity?: number;
     colormap?: string;
+    imgFormat?: string;
+    minCut?: number;
+    maxCut?: number;
+    stretch?: string;
+    additive?: boolean;
+    longitudeReversed?: boolean;
   };
 }
 
