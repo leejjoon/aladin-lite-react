@@ -23,7 +23,7 @@ const overlayLayerTemplate: SurveyOptions = {
   url: 'P/2MASS/color',
   frame: 'equatorial',
   order: 9,
-  options: { opacity: 0.5 },
+  options: { opacity: 0.5, minCut: 0.0, maxCut: 1.0 },
 };
 
 export default function HomePage() {
@@ -36,6 +36,8 @@ export default function HomePage() {
   // Local state for cut inputs
   const [minCutInput, setMinCutInput] = useState<string | number>(baseLayer.options?.minCut ?? '');
   const [maxCutInput, setMaxCutInput] = useState<string | number>(baseLayer.options?.maxCut ?? '');
+  const [overlayMinCutInput, setOverlayMinCutInput] = useState<string | number>(overlayLayerTemplate.options?.minCut ?? '');
+  const [overlayMaxCutInput, setOverlayMaxCutInput] = useState<string | number>(overlayLayerTemplate.options?.maxCut ?? '');
 
   const handleOnReady = useCallback(() => setIsAladinReady(true), []);
 
@@ -59,11 +61,19 @@ export default function HomePage() {
     }
   };
 
-  const handleApplyCuts = () => {
+  const handleApplyBaseCuts = () => {
     const minCut = parseFloat(minCutInput as string);
     const maxCut = parseFloat(maxCutInput as string);
     if (!isNaN(minCut) && !isNaN(maxCut)) {
       updateLayerOptions(baseLayer.id, { minCut, maxCut });
+    }
+  };
+
+  const handleApplyOverlayCuts = () => {
+    const minCut = parseFloat(overlayMinCutInput as string);
+    const maxCut = parseFloat(overlayMaxCutInput as string);
+    if (!isNaN(minCut) && !isNaN(maxCut)) {
+      updateLayerOptions(overlayLayerTemplate.id, { minCut, maxCut });
     }
   };
   
@@ -73,6 +83,11 @@ export default function HomePage() {
     if (baseLayerOptions) {
       setMinCutInput(baseLayerOptions.minCut ?? '');
       setMaxCutInput(baseLayerOptions.maxCut ?? '');
+    }
+    const overlayLayerOptions = layers.find(l => l.id === overlayLayerTemplate.id)?.options;
+    if (overlayLayerOptions) {
+      setOverlayMinCutInput(overlayLayerOptions.minCut ?? '');
+      setOverlayMaxCutInput(overlayLayerOptions.maxCut ?? '');
     }
   }, [layers]);
 
@@ -158,7 +173,7 @@ export default function HomePage() {
               </div>
             </div>
             <button
-              onClick={handleApplyCuts}
+              onClick={handleApplyBaseCuts}
               disabled={!isAladinReady}
               className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
             >
@@ -181,16 +196,51 @@ export default function HomePage() {
             <label htmlFor="overlay-toggle" className="ml-2 block text-sm">Show Overlay</label>
           </div>
           {showOverlay && (
-            <div>
-              <label htmlFor="overlay-opacity-slider" className="block text-sm font-medium">Opacity: {overlayLayerOptions.opacity?.toFixed(2)}</label>
-              <input
-                id="overlay-opacity-slider"
-                type="range" min="0" max="1" step="0.01"
-                value={overlayLayerOptions.opacity ?? 0.5}
-                onChange={(e) => updateLayerOptions(overlayLayerTemplate.id, { opacity: parseFloat(e.target.value) })}
-                className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+            <div className="space-y-2">
+              <div>
+                <label htmlFor="overlay-opacity-slider" className="block text-sm font-medium">Opacity: {overlayLayerOptions.opacity?.toFixed(2)}</label>
+                <input
+                  id="overlay-opacity-slider"
+                  type="range" min="0" max="1" step="0.01"
+                  value={overlayLayerOptions.opacity ?? 0.5}
+                  onChange={(e) => updateLayerOptions(overlayLayerTemplate.id, { opacity: parseFloat(e.target.value) })}
+                  className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                  disabled={!isAladinReady}
+                />
+              </div>
+              <div className="flex space-x-2">
+                <div>
+                  <label htmlFor="overlay-min-cut-input" className="block text-sm font-medium">Min Cut</label>
+                  <input
+                    id="overlay-min-cut-input"
+                    type="number"
+                    step="0.01"
+                    value={overlayMinCutInput}
+                    onChange={(e) => setOverlayMinCutInput(e.target.value)}
+                    className="bg-gray-700 text-white rounded px-2 py-1 w-full text-sm"
+                    disabled={!isAladinReady}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="overlay-max-cut-input" className="block text-sm font-medium">Max Cut</label>
+                  <input
+                    id="overlay-max-cut-input"
+                    type="number"
+                    step="0.01"
+                    value={overlayMaxCutInput}
+                    onChange={(e) => setOverlayMaxCutInput(e.target.value)}
+                    className="bg-gray-700 text-white rounded px-2 py-1 w-full text-sm"
+                    disabled={!isAladinReady}
+                  />
+                </div>
+              </div>
+              <button
+                onClick={handleApplyOverlayCuts}
                 disabled={!isAladinReady}
-              />
+                className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
+              >
+                Apply Cuts
+              </button>
             </div>
           )}
         </div>

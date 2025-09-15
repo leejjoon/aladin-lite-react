@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { SurveyOptions } from 'aladin-lite-react';
 import { DEFAULT_HIPS_SURVEY, SPECTRAL_CHANNEL_URL_TEMPLATE, SPECTRAL_CHANNEL_URL_FORMAT } from '@/config';
@@ -15,6 +15,10 @@ export default function HomePage() {
   const [fov, setFov] = useState(60);
   const [layers, setLayers] = useState<SurveyOptions[]>([DEFAULT_HIPS_SURVEY]);
   const [selectedChannel, setSelectedChannel] = useState<{ band: string; channel: number } | null>(null);
+
+  // Local state for cut inputs, initialized from config
+  const [minCutInput, setMinCutInput] = useState<string | number>(DEFAULT_HIPS_SURVEY.options?.minCut ?? '0.0');
+  const [maxCutInput, setMaxCutInput] = useState<string | number>(DEFAULT_HIPS_SURVEY.options?.maxCut ?? '1.0');
 
   const handleOnReady = useCallback(() => {
     setIsAladinReady(true);
@@ -34,7 +38,14 @@ export default function HomePage() {
   };
 
   const handleShowRgb = () => {
-    setLayers([DEFAULT_HIPS_SURVEY]);
+    const minCut = parseFloat(minCutInput as string);
+    const maxCut = parseFloat(maxCutInput as string);
+    const newOptions = { ...DEFAULT_HIPS_SURVEY.options };
+    if (!isNaN(minCut) && !isNaN(maxCut)) {
+      newOptions.minCut = minCut;
+      newOptions.maxCut = maxCut;
+    }
+    setLayers([{ ...DEFAULT_HIPS_SURVEY, options: newOptions }]);
     setSelectedChannel(null);
   };
 
@@ -44,18 +55,47 @@ export default function HomePage() {
       .replace('{band}', band)
       .replace('{channel:03d}', channelString);
 
+    const minCut = parseFloat(minCutInput as string);
+    const maxCut = parseFloat(maxCutInput as string);
+    const newOptions: SurveyOptions['options'] = { imgFormat: SPECTRAL_CHANNEL_URL_FORMAT };
+    if (!isNaN(minCut) && !isNaN(maxCut)) {
+      newOptions.minCut = minCut;
+      newOptions.maxCut = maxCut;
+    }
+
     const newLayer: SurveyOptions = {
       id: `SPH-${band}-${channel}`,
       name: `S ${band} ${channel}`,
       url,
       frame: 'equatorial',
       order: 10,
-      options: {imgFormat: SPECTRAL_CHANNEL_URL_FORMAT},
+      options: newOptions,
     };
 
     setLayers([newLayer]);
     setSelectedChannel({ band, channel });
   };
+
+  const handleApplyCuts = () => {
+    const minCut = parseFloat(minCutInput as string);
+    const maxCut = parseFloat(maxCutInput as string);
+    if (!isNaN(minCut) && !isNaN(maxCut)) {
+      setLayers(prev => 
+        prev.map(layer => ({
+          ...layer,
+          options: { ...layer.options, minCut, maxCut }
+        }))
+      );
+    }
+  };
+
+  useEffect(() => {
+    const currentBaseLayer = layers[0];
+    if (currentBaseLayer?.options) {
+      setMinCutInput(currentBaseLayer.options.minCut ?? '');
+      setMaxCutInput(currentBaseLayer.options.maxCut ?? '');
+    }
+  }, [layers]);
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
@@ -101,9 +141,42 @@ export default function HomePage() {
           </div>
         </div>
         
-        <div>
-          <div className="text-sm">
-            Selected Channel: <span className="font-bold text-cyan-400">{selectedChannel ? `${selectedChannel.band} ${selectedChannel.channel}` : 'None'}</span>
+        <div className="border-t border-gray-700 pt-4">
+          <h3 className="text-lg font-bold mb-2 text-cyan-400">Base Layer Cuts</h3>
+          <div className="space-y-2">
+            <div className="flex space-x-2">
+              <div>
+                <label htmlFor="min-cut-input" className="block text-sm font-medium">Min Cut</label>
+                <input
+                  id="min-cut-input"
+                  type="number"
+                  step="0.01"
+                  value={minCutInput}
+                  onChange={(e) => setMinCutInput(e.target.value)}
+                  className="bg-gray-700 text-white rounded px-2 py-1 w-full text-sm"
+                  disabled={!isAladinReady}
+                />
+              </div>
+              <div>
+                <label htmlFor="max-cut-input" className="block text-sm font-medium">Max Cut</label>
+                <input
+                  id="max-cut-input"
+                  type="number"
+                  step="0.01"
+                  value={maxCutInput}
+                  onChange={(e) => setMaxCutInput(e.target.value)}
+                  className="bg-gray-700 text-white rounded px-2 py-1 w-full text-sm"
+                  disabled={!isAladinReady}
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleApplyCuts}
+              disabled={!isAladinReady}
+              className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
+            >
+              Apply Cuts
+            </button>
           </div>
         </div>
       </aside>
