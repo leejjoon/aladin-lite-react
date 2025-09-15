@@ -68,6 +68,7 @@ interface AladinLayer {
   id: string;
   setOpacity: (opacity: number) => void;
   setAlpha: (alpha: number) => void; // Alias for setOpacity
+  setCuts: (min: number, max: number) => void;
 }
 
 export interface AladinInstance {
@@ -79,6 +80,7 @@ export interface AladinInstance {
   on: (event: string, callback: (data: any) => void) => void;
   callbacksByEventName: Record<string, (data: any) => void>;
   getOverlayImageLayer: (id: string) => AladinLayer | null;
+  getBaseImageLayer: () => AladinLayer | null;
   removeImageLayer: (id: string) => void;
   setBaseImageLayer: (survey: any) => void;
   setOverlayImageLayer: (survey: any, id: string) => void;
@@ -133,12 +135,9 @@ const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options
 
   useEffect(() => {
     if (aladin) {
-      // The Aladin Lite library itself handles the frequency of zoomChanged events,
-      // so we don't need to throttle it further here.
       aladin.on('zoomChanged', handleZoomChanged);
       return () => {
         if (aladin.callbacksByEventName && aladin.callbacksByEventName['zoomChanged']) {
-          // A more robust way to remove the listener if the library doesn't provide a dedicated off() method
           aladin.callbacksByEventName['zoomChanged'] = () => {};
         }
       };
@@ -155,6 +154,32 @@ const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options
     }
   }, [aladin, fov]);
 
+  // --- Layer Property Synchronization ---
+  const updateLayerProperties = useCallback((layer: AladinLayer, layerProps: SurveyOptions) => {
+    const internalApi = aladin as any;
+    if (!internalApi._layerStates) {
+      internalApi._layerStates = {};
+    }
+    const state = internalApi._layerStates[layer.id] || {};
+
+    const newOpacity = layerProps.options?.opacity ?? 1.0;
+    if (newOpacity !== state.opacity) {
+      layer.setAlpha(newOpacity);
+      state.opacity = newOpacity;
+    }
+
+    const newMinCut = layerProps.options?.minCut;
+    const newMaxCut = layerProps.options?.maxCut;
+    if (newMinCut !== undefined && newMaxCut !== undefined && (newMinCut !== state.minCut || newMaxCut !== state.maxCut)) {
+      layer.setCuts(newMinCut, newMaxCut);
+      state.minCut = newMinCut;
+      state.maxCut = newMaxCut;
+    }
+
+    internalApi._layerStates[layer.id] = state;
+  }, [aladin]);
+
+  // --- Layer Reconciliation Logic ---
   useEffect(() => {
     if (!aladin || !layers || layers.length === 0) return;
 
@@ -164,75 +189,42 @@ const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options
     const internalApi = aladin as any;
 
     // --- Base Layer Management ---
-    const currentBaseLayerId = internalApi._currentBaseLayerId;
-    const currentBaseLayerOpacity = internalApi._currentBaseLayerOpacity;
-
-    // Set base layer if it's different
-    if (currentBaseLayerId !== baseLayerProps.id) {
-      const survey = aladin.createImageSurvey(
-        baseLayerProps.id,
-        baseLayerProps.name,
-        baseLayerProps.url,
-        baseLayerProps.frame,
-        baseLayerProps.order,
-        baseLayerProps.options
-      );
+    if (internalApi._currentBaseLayerId !== baseLayerProps.id) {
+      const survey = aladin.createImageSurvey(baseLayerProps.id, baseLayerProps.name, baseLayerProps.url, baseLayerProps.frame, baseLayerProps.order, baseLayerProps.options);
       aladin.setBaseImageLayer(survey);
       internalApi._currentBaseLayerId = baseLayerProps.id;
-      // Also update opacity when layer changes
-      const baseLayer = (aladin as any).getBaseImageLayer();
-      if (baseLayer) {
-        if (baseLayerProps.options && baseLayerProps.options.opacity !== undefined) {
-          baseLayer.setAlpha(baseLayerProps.options.opacity);
-          internalApi._currentBaseLayerOpacity = baseLayerProps.options.opacity;
-        } else {
-          // Reset opacity if not defined
-          baseLayer.setAlpha(1.0);
-          internalApi._currentBaseLayerOpacity = 1.0;
-        }
-      }
-    } else {
-      // Only update opacity if it has changed
-      const newOpacity = baseLayerProps.options?.opacity ?? 1.0;
-      if (newOpacity !== currentBaseLayerOpacity) {
-        const baseLayer = (aladin as any).getBaseImageLayer();
-        if (baseLayer) {
-          baseLayer.setAlpha(newOpacity);
-          internalApi._currentBaseLayerOpacity = newOpacity;
-        }
-      }
+    }
+    
+    const baseLayer = aladin.getBaseImageLayer();
+    if (baseLayer) {
+      updateLayerProperties(baseLayer, baseLayerProps);
     }
 
     // --- Overlay Layer Management ---
-    // Remove layers that are no longer in props
     managedLayerIds.current.forEach(id => {
       if (!newOverlayIds.has(id)) {
         aladin.removeImageLayer(id);
         managedLayerIds.current.delete(id);
+        if (internalApi._layerStates) {
+          delete internalApi._layerStates[id];
+        }
       }
     });
 
-    // Add or update overlay layers
     overlayProps.forEach(layerOptions => {
-      const existingLayer = aladin.getOverlayImageLayer(layerOptions.id);
-      if (existingLayer) {
-        if (layerOptions.options?.opacity !== undefined) {
-          existingLayer.setAlpha(layerOptions.options.opacity);
-        }
-      } else {
-        const survey = aladin.createImageSurvey(
-          layerOptions.id,
-          layerOptions.name,
-          layerOptions.url,
-          layerOptions.frame,
-          layerOptions.order,
-          layerOptions.options
-        );
+      let layer = aladin.getOverlayImageLayer(layerOptions.id);
+      if (!layer) {
+        const survey = aladin.createImageSurvey(layerOptions.id, layerOptions.name, layerOptions.url, layerOptions.frame, layerOptions.order, layerOptions.options);
         aladin.setOverlayImageLayer(survey, layerOptions.id);
         managedLayerIds.current.add(layerOptions.id);
+        layer = aladin.getOverlayImageLayer(layerOptions.id);
+      }
+      
+      if (layer) {
+        updateLayerProperties(layer, layerOptions);
       }
     });
-  }, [aladin, layers]);
+  }, [aladin, layers, updateLayerProperties]);
 
   useImperativeHandle(ref, () => ({
     getAladinInstance: () => aladin,
