@@ -41,7 +41,7 @@ export interface SurveyOptions {
   name: string;
   url: string;
   frame: string;
-  order: number;
+  order?: number;
   options?: {
     opacity?: number;
     colormap?: string;
@@ -221,7 +221,7 @@ const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options
 
     // --- Base Layer Management ---
     if (internalApi._currentBaseLayerId !== baseLayerProps.id) {
-      const survey = aladin.createImageSurvey(baseLayerProps.id, baseLayerProps.name, baseLayerProps.url, baseLayerProps.frame, baseLayerProps.order, baseLayerProps.options);
+      const survey = aladin.createImageSurvey(baseLayerProps.id, baseLayerProps.name, baseLayerProps.url, baseLayerProps.frame, baseLayerProps.order ?? 0, baseLayerProps.options);
       aladin.setBaseImageLayer(survey);
       internalApi._currentBaseLayerId = baseLayerProps.id;
     }
@@ -245,7 +245,7 @@ const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options
     overlayProps.forEach(layerOptions => {
       let layer = aladin.getOverlayImageLayer(layerOptions.id);
       if (!layer) {
-        const survey = aladin.createImageSurvey(layerOptions.id, layerOptions.name, layerOptions.url, layerOptions.frame, layerOptions.order, layerOptions.options);
+        const survey = aladin.createImageSurvey(layerOptions.id, layerOptions.name, layerOptions.url, layerOptions.frame, layerOptions.order ?? 0, layerOptions.options);
         aladin.setOverlayImageLayer(survey, layerOptions.id);
         managedLayerIds.current.add(layerOptions.id);
         layer = aladin.getOverlayImageLayer(layerOptions.id);

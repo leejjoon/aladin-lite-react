@@ -121,7 +121,7 @@ export default function HomePage() {
             className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
             onClick={handleShowRgb}
           >
-            Show RGB
+            Show Coverage
           </button>
         </div>
 
@@ -153,80 +153,36 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        
-        <div className="border-t border-gray-700 pt-4">
-          <h3 className="text-lg font-bold mb-2 text-cyan-400">Projection</h3>
-          <div className="grid grid-cols-4 gap-2">
-            {projections.map(p => (
-              <button
-                key={p}
-                className={`text-sm py-1 px-2 rounded ${
-                  projection === p
-                    ? 'bg-cyan-500 text-white'
-                    : 'bg-gray-700 hover:bg-gray-600 text-white'
-                }`}
-                onClick={() => setProjection(p)}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="border-t border-gray-700 pt-4">
-          <h3 className="text-lg font-bold mb-2 text-cyan-400">Coordinate Frame</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {cooFrames.map(frame => (
-              <button
-                key={frame}
-                className={`text-sm py-1 px-2 rounded ${
-                  cooFrame === frame
-                    ? 'bg-cyan-500 text-white'
-                    : 'bg-gray-700 hover:bg-gray-600 text-white'
-                }`}
-                onClick={() => setCooFrame(frame)}
-              >
-                {frame}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="border-t border-gray-700 pt-4">
-          <h3 className="text-lg font-bold mb-2 text-cyan-400">Base Layer Cuts</h3>
-          <div className="space-y-2">
-            <div className="flex space-x-2">
-              <div>
-                <label htmlFor="min-cut-input" className="block text-sm font-medium">Min Cut</label>
-                <input
-                  id="min-cut-input"
-                  type="number"
-                  step="0.01"
-                  value={minCutInput}
-                  onChange={(e) => setMinCutInput(e.target.value)}
-                  className="bg-gray-700 text-white rounded px-2 py-1 w-full text-sm"
-                  disabled={!isAladinReady}
-                />
-              </div>
-              <div>
-                <label htmlFor="max-cut-input" className="block text-sm font-medium">Max Cut</label>
-                <input
-                  id="max-cut-input"
-                  type="number"
-                  step="0.01"
-                  value={maxCutInput}
-                  onChange={(e) => setMaxCutInput(e.target.value)}
-                  className="bg-gray-700 text-white rounded px-2 py-1 w-full text-sm"
-                  disabled={!isAladinReady}
-                />
-              </div>
+<div className="border-t border-gray-700 pt-4">
+          <div className="flex items-end space-x-2">
+            <div className="flex-1">
+              <label htmlFor="min-cut-input" className="block text-xs text-gray-400 mb-1">Min</label>
+              <input
+                id="min-cut-input"
+                type="number"
+                step="0.01"
+                value={minCutInput}
+                onChange={(e) => setMinCutInput(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+              />
+            </div>
+            <div className="flex-1">
+              <label htmlFor="max-cut-input" className="block text-xs text-gray-400 mb-1">Max</label>
+              <input
+                id="max-cut-input"
+                type="number"
+                step="0.01"
+                value={maxCutInput}
+                onChange={(e) => setMaxCutInput(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+              />
             </div>
             <button
               onClick={handleApplyCuts}
-              disabled={!isAladinReady}
-              className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
+              title="Apply cuts"
+              className="h-9 w-9 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded text-lg"
             >
-              Apply Cuts
+              ✓
             </button>
           </div>
         </div>
