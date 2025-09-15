@@ -3,24 +3,18 @@
 import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { SurveyOptions } from 'aladin-lite-react';
+import { DEFAULT_HIPS_SURVEY, SPECTRAL_CHANNEL_URL_TEMPLATE } from '@/config';
 
 const AladinViewer = dynamic(() => import('@/components/AladinViewer'), {
   ssr: false,
 });
 
-const baseLayer: SurveyOptions = {
-  id: 'DSS',
-  name: 'DSS Colored',
-  url: 'P/DSS2/color',
-  frame: 'equatorial',
-  order: 9,
-};
-
 export default function HomePage() {
   const [isAladinReady, setIsAladinReady] = useState(false);
   const [target, setTarget] = useState('M31');
   const [fov, setFov] = useState(60);
-  const [layers, setLayers] = useState<SurveyOptions[]>([baseLayer]);
+  const [layers, setLayers] = useState<SurveyOptions[]>([DEFAULT_HIPS_SURVEY]);
+  const [selectedChannel, setSelectedChannel] = useState<{ band: string; channel: number } | null>(null);
 
   const handleOnReady = useCallback(() => {
     setIsAladinReady(true);
@@ -39,6 +33,29 @@ export default function HomePage() {
     B6: generateChannels(86, 17),
   };
 
+  const handleShowRgb = () => {
+    setLayers([DEFAULT_HIPS_SURVEY]);
+    setSelectedChannel(null);
+  };
+
+  const handleChannelClick = (band: string, channel: number) => {
+    const channelString = String(channel).padStart(3, '0');
+    const url = SPECTRAL_CHANNEL_URL_TEMPLATE
+      .replace('{band}', band)
+      .replace('{channel:03d}', channelString);
+
+    const newLayer: SurveyOptions = {
+      id: `spectral-${band}-${channel}`,
+      name: `Spectral ${band} ${channel}`,
+      url,
+      frame: 'equatorial',
+      order: 10,
+    };
+
+    setLayers([newLayer]);
+    setSelectedChannel({ band, channel });
+  };
+
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Left Sidebar */}
@@ -46,7 +63,10 @@ export default function HomePage() {
         <div>
           <h2 className="text-lg font-bold text-cyan-400">Surveys</h2>
           <p className="text-sm text-gray-400 mt-2">Last Survey ID: 2025W25_2A</p>
-          <button className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+          <button
+            className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+            onClick={handleShowRgb}
+          >
             Show RGB
           </button>
         </div>
@@ -58,14 +78,22 @@ export default function HomePage() {
               <div key={band}>
                 <div className="font-bold text-center text-cyan-500 pb-2">{band}</div>
                 <div className="flex flex-col space-y-1">
-                  {spectralChannels[band as keyof typeof spectralChannels].map((channel) => (
-                    <button
-                      key={channel}
-                      className="bg-gray-700 hover:bg-gray-600 text-white text-sm py-1 px-2 rounded"
-                    >
-                      {channel}
-                    </button>
-                  ))}
+                  {spectralChannels[band as keyof typeof spectralChannels].map((channel) => {
+                    const isSelected = selectedChannel?.band === band && selectedChannel?.channel === channel;
+                    return (
+                      <button
+                        key={channel}
+                        className={`text-sm py-1 px-2 rounded ${
+                          isSelected
+                            ? 'bg-cyan-500 text-white'
+                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                        }`}
+                        onClick={() => handleChannelClick(band, channel)}
+                      >
+                        {channel}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -73,13 +101,8 @@ export default function HomePage() {
         </div>
         
         <div>
-          <div className="text-sm">Selected Channel: <span className="font-bold text-cyan-400">None</span></div>
-          <div className="flex items-center justify-between mt-4">
-            <label htmlFor="week-plans-toggle" className="text-sm">Show Week Plans</label>
-            <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-              <input type="checkbox" name="toggle" id="week-plans-toggle" className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
-              <label htmlFor="week-plans-toggle" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-700 cursor-pointer"></label>
-            </div>
+          <div className="text-sm">
+            Selected Channel: <span className="font-bold text-cyan-400">{selectedChannel ? `${selectedChannel.band} ${selectedChannel.channel}` : 'None'}</span>
           </div>
         </div>
       </aside>
