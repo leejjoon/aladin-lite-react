@@ -155,49 +155,83 @@ const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options
     }
   }, [aladin, fov]);
 
-  // The final, correct layer reconciliation logic
   useEffect(() => {
-    if (!aladin || !layers) return;
-  
+    if (!aladin || !layers || layers.length === 0) return;
+
     const baseLayerProps = layers[0];
     const overlayProps = layers.slice(1);
     const newOverlayIds = new Set(overlayProps.map(l => l.id));
-  
-    // Ensure base layer is set correctly
-    // HACK: Aladin Lite doesn't expose the current base layer ID, so we track it ourselves.
-    // We store it on the instance to persist across renders.
     const internalApi = aladin as any;
-    if (!internalApi._currentBaseLayerId || internalApi._currentBaseLayerId !== baseLayerProps.id) {
-      const survey = aladin.createImageSurvey(baseLayerProps.id, baseLayerProps.name, baseLayerProps.url, baseLayerProps.frame, baseLayerProps.order, baseLayerProps.options);
+
+    // --- Base Layer Management ---
+    const currentBaseLayerId = internalApi._currentBaseLayerId;
+    const currentBaseLayerOpacity = internalApi._currentBaseLayerOpacity;
+
+    // Set base layer if it's different
+    if (currentBaseLayerId !== baseLayerProps.id) {
+      const survey = aladin.createImageSurvey(
+        baseLayerProps.id,
+        baseLayerProps.name,
+        baseLayerProps.url,
+        baseLayerProps.frame,
+        baseLayerProps.order,
+        baseLayerProps.options
+      );
       aladin.setBaseImageLayer(survey);
       internalApi._currentBaseLayerId = baseLayerProps.id;
+      // Also update opacity when layer changes
+      const baseLayer = (aladin as any).getBaseImageLayer();
+      if (baseLayer) {
+        if (baseLayerProps.options && baseLayerProps.options.opacity !== undefined) {
+          baseLayer.setAlpha(baseLayerProps.options.opacity);
+          internalApi._currentBaseLayerOpacity = baseLayerProps.options.opacity;
+        } else {
+          // Reset opacity if not defined
+          baseLayer.setAlpha(1.0);
+          internalApi._currentBaseLayerOpacity = 1.0;
+        }
+      }
+    } else {
+      // Only update opacity if it has changed
+      const newOpacity = baseLayerProps.options?.opacity ?? 1.0;
+      if (newOpacity !== currentBaseLayerOpacity) {
+        const baseLayer = (aladin as any).getBaseImageLayer();
+        if (baseLayer) {
+          baseLayer.setAlpha(newOpacity);
+          internalApi._currentBaseLayerOpacity = newOpacity;
+        }
+      }
     }
-  
-    // Remove overlay layers that are no longer in props
+
+    // --- Overlay Layer Management ---
+    // Remove layers that are no longer in props
     managedLayerIds.current.forEach(id => {
       if (!newOverlayIds.has(id)) {
         aladin.removeImageLayer(id);
         managedLayerIds.current.delete(id);
       }
     });
-  
+
     // Add or update overlay layers
     overlayProps.forEach(layerOptions => {
       const existingLayer = aladin.getOverlayImageLayer(layerOptions.id);
-  
       if (existingLayer) {
-        // Layer exists, just update its properties
         if (layerOptions.options?.opacity !== undefined) {
           existingLayer.setAlpha(layerOptions.options.opacity);
         }
       } else {
-        // Layer is new, create and add it
-        const survey = aladin.createImageSurvey(layerOptions.id, layerOptions.name, layerOptions.url, layerOptions.frame, layerOptions.order, layerOptions.options);
+        const survey = aladin.createImageSurvey(
+          layerOptions.id,
+          layerOptions.name,
+          layerOptions.url,
+          layerOptions.frame,
+          layerOptions.order,
+          layerOptions.options
+        );
         aladin.setOverlayImageLayer(survey, layerOptions.id);
         managedLayerIds.current.add(layerOptions.id);
       }
     });
-  
   }, [aladin, layers]);
 
   useImperativeHandle(ref, () => ({

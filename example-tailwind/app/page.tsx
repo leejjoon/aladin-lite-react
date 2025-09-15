@@ -14,6 +14,7 @@ const baseLayer: SurveyOptions = {
   url: 'P/DSS2/color',
   frame: 'equatorial',
   order: 9,
+  options: { opacity: 1.0 },
 };
 
 const overlayLayerTemplate: SurveyOptions = {
@@ -32,6 +33,7 @@ export default function HomePage() {
   const [layers, setLayers] = useState<SurveyOptions[]>([baseLayer]);
   const [showOverlay, setShowOverlay] = useState(false);
   const [overlayOpacity, setOverlayOpacity] = useState(0.5);
+  const [baseLayerOpacity, setBaseLayerOpacity] = useState(1.0);
 
   const handleGotoClick = () => {
     setTarget('M31');
@@ -51,7 +53,7 @@ export default function HomePage() {
     }
   };
 
-  const handleOpacityChange = (opacity: number) => {
+  const handleOverlayOpacityChange = (opacity: number) => {
     setOverlayOpacity(opacity);
     setLayers(prev => prev.map(layer => {
       if (layer.id === overlayLayerTemplate.id) {
@@ -59,6 +61,15 @@ export default function HomePage() {
       }
       return layer;
     }));
+  };
+
+  const handleBaseLayerOpacityChange = (opacity: number) => {
+    setBaseLayerOpacity(opacity);
+    setLayers(prev => {
+      const newLayers = [...prev];
+      newLayers[0] = { ...newLayers[0], options: { ...newLayers[0].options, opacity } };
+      return newLayers;
+    });
   };
 
   return (
@@ -88,6 +99,20 @@ export default function HomePage() {
         </div>
         <div className="mt-4">
           <h3 className="text-lg font-bold mb-2">Layers</h3>
+          <div className="mt-2">
+            <label htmlFor="opacity-slider" className="block text-sm font-medium">Base Opacity: {baseLayerOpacity.toFixed(2)}</label>
+            <input
+              id="opacity-slider"
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={baseLayerOpacity}
+              onChange={(e) => handleBaseLayerOpacityChange(parseFloat(e.target.value))}
+              className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+              disabled={!isAladinReady}
+            />
+          </div>
           <div className="flex items-center">
             <input
               id="overlay-toggle"
@@ -103,7 +128,7 @@ export default function HomePage() {
           </div>
           {showOverlay && (
             <div className="mt-2">
-              <label htmlFor="opacity-slider" className="block text-sm font-medium">Opacity: {overlayOpacity.toFixed(2)}</label>
+              <label htmlFor="opacity-slider" className="block text-sm font-medium">Overlay Opacity: {overlayOpacity.toFixed(2)}</label>
               <input
                 id="opacity-slider"
                 type="range"
@@ -111,7 +136,7 @@ export default function HomePage() {
                 max="1"
                 step="0.01"
                 value={overlayOpacity}
-                onChange={(e) => handleOpacityChange(parseFloat(e.target.value))}
+                onChange={(e) => handleOverlayOpacityChange(parseFloat(e.target.value))}
                 className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
                 disabled={!isAladinReady}
               />
