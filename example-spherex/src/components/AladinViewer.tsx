@@ -9,9 +9,11 @@ interface AladinViewerProps {
   fov?: number;
   onZoomChanged?: (fov: number) => void;
   layers?: SurveyOptions[];
+  projection?: string;
+  cooFrame?: string;
 }
 
-const AladinViewer = ({ onReady, target, fov, onZoomChanged, layers }: AladinViewerProps) => {
+const AladinViewer = ({ onReady, target, fov, onZoomChanged, layers, projection, cooFrame }: AladinViewerProps) => {
   const handleOnReady = useCallback((aladin: AladinInstance) => {
     if (aladin && onReady) {
       onReady();
@@ -26,6 +28,8 @@ const AladinViewer = ({ onReady, target, fov, onZoomChanged, layers }: AladinVie
         fov={fov}
         onZoomChanged={onZoomChanged}
         layers={layers}
+        projection={projection}
+        cooFrame={cooFrame}
       />
     </div>
   );

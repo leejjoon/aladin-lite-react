@@ -3,7 +3,15 @@
 import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { SurveyOptions } from 'aladin-lite-react';
-import { DEFAULT_HIPS_SURVEY, SPECTRAL_CHANNEL_URL_TEMPLATE, SPECTRAL_CHANNEL_URL_FORMAT } from '@/config';
+import { 
+  DEFAULT_HIPS_SURVEY, 
+  SPECTRAL_CHANNEL_URL_TEMPLATE, 
+  SPECTRAL_CHANNEL_URL_FORMAT,
+  DEFAULT_FOV,
+  DEFAULT_PROJECTION,
+  DEFAULT_COORDINATE_FRAME,
+  DEFAULT_TARGET
+} from '@/config';
 
 const AladinViewer = dynamic(() => import('@/components/AladinViewer'), {
   ssr: false,
@@ -11,10 +19,12 @@ const AladinViewer = dynamic(() => import('@/components/AladinViewer'), {
 
 export default function HomePage() {
   const [isAladinReady, setIsAladinReady] = useState(false);
-  const [target, setTarget] = useState('M31');
-  const [fov, setFov] = useState(60);
+  const [target, setTarget] = useState(DEFAULT_TARGET);
+  const [fov, setFov] = useState(DEFAULT_FOV);
   const [layers, setLayers] = useState<SurveyOptions[]>([DEFAULT_HIPS_SURVEY]);
   const [selectedChannel, setSelectedChannel] = useState<{ band: string; channel: number } | null>(null);
+  const [projection, setProjection] = useState(DEFAULT_PROJECTION);
+  const [cooFrame, setCooFrame] = useState(DEFAULT_COORDINATE_FRAME);
 
   // Local state for cut inputs, initialized from config
   const [minCutInput, setMinCutInput] = useState<string | number>(DEFAULT_HIPS_SURVEY.options?.minCut ?? '0.0');
@@ -97,6 +107,9 @@ export default function HomePage() {
     }
   }, [layers]);
 
+  const projections = ['SIN', 'MOL', 'AIT', 'TAN'];
+  const cooFrames = ['ICRS', 'ICRSd', 'Galactic'];
+
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Left Sidebar */}
@@ -141,6 +154,44 @@ export default function HomePage() {
           </div>
         </div>
         
+        <div className="border-t border-gray-700 pt-4">
+          <h3 className="text-lg font-bold mb-2 text-cyan-400">Projection</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {projections.map(p => (
+              <button
+                key={p}
+                className={`text-sm py-1 px-2 rounded ${
+                  projection === p
+                    ? 'bg-cyan-500 text-white'
+                    : 'bg-gray-700 hover:bg-gray-600 text-white'
+                }`}
+                onClick={() => setProjection(p)}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="border-t border-gray-700 pt-4">
+          <h3 className="text-lg font-bold mb-2 text-cyan-400">Coordinate Frame</h3>
+          <div className="grid grid-cols-3 gap-2">
+            {cooFrames.map(frame => (
+              <button
+                key={frame}
+                className={`text-sm py-1 px-2 rounded ${
+                  cooFrame === frame
+                    ? 'bg-cyan-500 text-white'
+                    : 'bg-gray-700 hover:bg-gray-600 text-white'
+                }`}
+                onClick={() => setCooFrame(frame)}
+              >
+                {frame}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="border-t border-gray-700 pt-4">
           <h3 className="text-lg font-bold mb-2 text-cyan-400">Base Layer Cuts</h3>
           <div className="space-y-2">
@@ -190,6 +241,8 @@ export default function HomePage() {
             fov={fov}
             onReady={handleOnReady}
             onZoomChanged={setFov}
+            projection={projection}
+            cooFrame={cooFrame}
           />
         </div>
       </main>

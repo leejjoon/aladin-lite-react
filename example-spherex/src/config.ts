@@ -1,5 +1,10 @@
 import { SurveyOptions } from 'aladin-lite-react';
 
+export const DEFAULT_FOV = 360;
+export const DEFAULT_PROJECTION = 'MOL';
+export const DEFAULT_COORDINATE_FRAME = 'GAL';
+export const DEFAULT_TARGET = 'Sgr a*';
+
 export const DEFAULT_HIPS_SURVEY: SurveyOptions = {
   id: 'SPX-Coverage',
   name: 'SPHEREx Coverage',

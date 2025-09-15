@@ -62,6 +62,8 @@ interface AladinLiteProps {
   fov?: number;
   onZoomChanged?: (fov: number) => void;
   layers?: SurveyOptions[];
+  projection?: string;
+  cooFrame?: string;
 }
 
 interface AladinLayer {
@@ -84,13 +86,15 @@ export interface AladinInstance {
   removeImageLayer: (id: string) => void;
   setBaseImageLayer: (survey: any) => void;
   setOverlayImageLayer: (survey: any, id: string) => void;
+  setProjection: (projection: string) => void;
+  setFrame: (frame: string) => void;
 }
 
 export interface AladinLiteHandle {
   getAladinInstance: () => AladinInstance | null;
 }
 
-const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options, onReady, className, target, fov, onZoomChanged, layers }, ref) => {
+const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options, onReady, className, target, fov, onZoomChanged, layers, projection, cooFrame }, ref) => {
   const aladinRef = useRef<HTMLDivElement>(null);
   const [aladin, setAladin] = useState<AladinInstance | null>(null);
   const managedLayerIds = useRef<Set<string>>(new Set());
@@ -112,7 +116,14 @@ const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options
           await A.init;
 
           if (isMounted && aladinRef.current) {
-            instance = A.aladin(aladinRef.current, { ...options });
+            const initialOptions = { ...options };
+            if (projection) {
+              (initialOptions as any).projection = projection;
+            }
+            if (cooFrame) {
+              (initialOptions as any).cooFrame = cooFrame;
+            }
+            instance = A.aladin(aladinRef.current, initialOptions);
             setAladin(instance);
             if (onReady) onReady(instance);
           }
@@ -153,6 +164,26 @@ const AladinLiteReact = forwardRef<AladinLiteHandle, AladinLiteProps>(({ options
       aladin.setFoV(fov);
     }
   }, [aladin, fov]);
+
+  useEffect(() => {
+    if (aladin && projection) {
+      const internalApi = aladin as any;
+      if (internalApi._currentProjection !== projection) {
+        aladin.setProjection(projection);
+        internalApi._currentProjection = projection;
+      }
+    }
+  }, [aladin, projection]);
+
+  useEffect(() => {
+    if (aladin && cooFrame) {
+      const internalApi = aladin as any;
+      if (internalApi._currentCooFrame !== cooFrame) {
+        aladin.setFrame(cooFrame);
+        internalApi._currentCooFrame = cooFrame;
+      }
+    }
+  }, [aladin, cooFrame]);
 
   // --- Layer Property Synchronization ---
   const updateLayerProperties = useCallback((layer: AladinLayer, layerProps: SurveyOptions) => {
