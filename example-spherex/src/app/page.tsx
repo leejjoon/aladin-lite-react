@@ -61,6 +61,8 @@ export default function HomePage() {
     g: true,
     b: true,
   });
+  const [syncMin, setSyncMin] = useState(true);
+  const [syncMax, setSyncMax] = useState(true);
 
   // Local state for cut inputs, initialized from config
   const [minCutInput, setMinCutInput] = useState<string | number>(DEFAULT_HIPS_SURVEY.options?.minCut ?? '0.0');
@@ -203,6 +205,25 @@ export default function HomePage() {
     setSelectedChannel({ band, channel });
   };
 
+  const handleSpectralCutLevelsChange = () => {
+    if (baseLayer) {
+      const minCut = parseFloat(minCutInput as string);
+      const maxCut = parseFloat(maxCutInput as string);
+      const newOptions = { ...baseLayer.options };
+      if (!isNaN(minCut) && !isNaN(maxCut)) {
+        newOptions.minCut = minCut;
+        newOptions.maxCut = maxCut;
+      }
+      setBaseLayer({ ...baseLayer, options: newOptions });
+    }
+  };
+
+  useEffect(() => {
+    if (isRgbModeEnabled) {
+      handleLoadRgb();
+    }
+  }, [rgbVisibility]);
+
   useEffect(() => {
     if (baseLayer?.options) {
       setMinCutInput(baseLayer.options.minCut ?? '');
@@ -305,9 +326,36 @@ export default function HomePage() {
         {/* Tab Content */}
         <div className="pt-4 flex-grow">
           {activeTab === 'spectral' && (
-            <div>
-              <h2 className="text-lg font-bold text-cyan-400">Spectral Channels</h2>
-              <div className="grid grid-cols-6 gap-2 mt-4">
+            <div className="flex flex-col h-full">
+              <div className="flex space-x-2 mb-4">
+                <div className="flex-1">
+                  <label htmlFor="min-cut-input" className="block text-xs text-gray-400 mb-1">Min Cut</label>
+                  <input
+                    id="min-cut-input"
+                    type="number"
+                    step="0.1"
+                    value={minCutInput}
+                    onChange={(e) => setMinCutInput(e.target.value)}
+                    onBlur={handleSpectralCutLevelsChange}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSpectralCutLevelsChange()}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="max-cut-input" className="block text-xs text-gray-400 mb-1">Max Cut</label>
+                  <input
+                    id="max-cut-input"
+                    type="number"
+                    step="0.1"
+                    value={maxCutInput}
+                    onChange={(e) => setMaxCutInput(e.target.value)}
+                    onBlur={handleSpectralCutLevelsChange}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSpectralCutLevelsChange()}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-6 gap-2 flex-grow">
                 {Object.keys(spectralChannels).map((band) => (
                   <div key={band}>
                     <div className="font-bold text-center text-cyan-500 pb-2">{band}</div>
@@ -359,38 +407,70 @@ export default function HomePage() {
                       else if (channel === 'g') setGChannel(e.target.value);
                       else setBChannel(e.target.value);
                     }}
+                    onBlur={handleLoadRgb}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLoadRgb()}
                     className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
                   />
                 ))}
 
                 {/* Min Cut Row */}
-                <label className="text-xs text-gray-400">Min</label>
+                <Tooltip text="Sync Min values across all RGB channels">
+                  <div className="flex items-center">
+                    <label className="text-xs text-gray-400 mr-1">Min</label>
+                    <input type="checkbox" checked={syncMin} onChange={(e) => setSyncMin(e.target.checked)} className="h-3 w-3 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"/>
+                  </div>
+                </Tooltip>
                 {(['r', 'g', 'b'] as const).map((channel) => (
                   <input
                     key={channel}
                     type="number"
-                    step="0.01"
+                    step="0.1"
                     value={rgbCutLevels[channel].min}
                     onChange={(e) => {
                       const min = parseFloat(e.target.value);
-                      setRgbCutLevels(prev => ({ ...prev, [channel]: { ...prev[channel], min } }));
+                      if (syncMin) {
+                        setRgbCutLevels(prev => ({
+                          r: { ...prev.r, min },
+                          g: { ...prev.g, min },
+                          b: { ...prev.b, min },
+                        }));
+                      } else {
+                        setRgbCutLevels(prev => ({ ...prev, [channel]: { ...prev[channel], min } }));
+                      }
                     }}
+                    onBlur={handleLoadRgb}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLoadRgb()}
                     className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
                   />
                 ))}
 
                 {/* Max Cut Row */}
-                <label className="text-xs text-gray-400">Max</label>
+                <Tooltip text="Sync Max values across all RGB channels">
+                  <div className="flex items-center">
+                    <label className="text-xs text-gray-400 mr-1">Max</label>
+                    <input type="checkbox" checked={syncMax} onChange={(e) => setSyncMax(e.target.checked)} className="h-3 w-3 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"/>
+                  </div>
+                </Tooltip>
                 {(['r', 'g', 'b'] as const).map((channel) => (
                   <input
                     key={channel}
                     type="number"
-                    step="0.01"
+                    step="0.1"
                     value={rgbCutLevels[channel].max}
                     onChange={(e) => {
                       const max = parseFloat(e.target.value);
-                      setRgbCutLevels(prev => ({ ...prev, [channel]: { ...prev[channel], max } }));
+                      if (syncMax) {
+                        setRgbCutLevels(prev => ({
+                          r: { ...prev.r, max },
+                          g: { ...prev.g, max },
+                          b: { ...prev.b, max },
+                        }));
+                      } else {
+                        setRgbCutLevels(prev => ({ ...prev, [channel]: { ...prev[channel], max } }));
+                      }
                     }}
+                    onBlur={handleLoadRgb}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLoadRgb()}
                     className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
                   />
                 ))}
@@ -402,19 +482,14 @@ export default function HomePage() {
                     <input
                       type="checkbox"
                       checked={rgbVisibility[channel]}
-                      onChange={(e) => setRgbVisibility(prev => ({ ...prev, [channel]: e.target.checked }))}
+                      onChange={(e) => {
+                        setRgbVisibility(prev => ({ ...prev, [channel]: e.target.checked }));
+                      }}
                       className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
                     />
                   </div>
                 ))}
               </div>
-
-              <button
-                onClick={handleLoadRgb}
-                className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-              >
-                Apply RGB
-              </button>
             </div>
           )}
         </div>
