@@ -50,11 +50,15 @@ export default function HomePage() {
   const [rChannel, setRChannel] = useState('');
   const [gChannel, setGChannel] = useState('');
   const [bChannel, setBChannel] = useState('');
-  const [selectedRgbChannel, setSelectedRgbChannel] = useState<'r' | 'g' | 'b'>('r');
   const [rgbCutLevels, setRgbCutLevels] = useState({
     r: { min: 0.0, max: 1.0 },
     g: { min: 0.0, max: 1.0 },
     b: { min: 0.0, max: 1.0 },
+  });
+  const [rgbVisibility, setRgbVisibility] = useState({
+    r: true,
+    g: true,
+    b: true,
   });
 
   // Local state for cut inputs, initialized from config
@@ -119,86 +123,57 @@ export default function HomePage() {
     return null;
   };
 
-  const handleLoadRgb = useCallback(() => {
-    const r = parseInt(rChannel, 10);
-    const g = parseInt(gChannel, 10);
-    const b = parseInt(bChannel, 10);
-
-    if (isNaN(r) || isNaN(g) || isNaN(b)) {
-      console.error("Invalid channel numbers");
-      return;
-    }
-
-    const rBand = findBandForChannel(r);
-    const gBand = findBandForChannel(g);
-    const bBand = findBandForChannel(b);
-
-    if (!rBand || !gBand || !bBand) {
-      console.error("Could not find band for one or more channels");
-      return;
-    }
-
-    const createChannelUrl = (band: string, channel: number) => {
-      const channelString = String(channel).padStart(3, '0');
-      return SPECTRAL_CHANNEL_URL_TEMPLATE
-        .replace('{band}', band)
-        .replace('{channel:03d}', channelString);
+  const handleLoadRgb = () => {
+    const channels = {
+      r: { num: parseInt(rChannel, 10), band: '' },
+      g: { num: parseInt(gChannel, 10), band: '' },
+      b: { num: parseInt(bChannel, 10), band: '' },
     };
 
-    const newLayers: SurveyOptions[] = [
-      {
-        id: `SPH-${rBand}-${r}`,
-        name: `R: S ${rBand} ${r}`,
-        url: createChannelUrl(rBand, r),
-        frame: 'equatorial',
-        order: 10,
-        options: {
-          colormap: 'red',
-          imgFormat: SPECTRAL_CHANNEL_URL_FORMAT,
-          minCut: rgbCutLevels.r.min,
-          maxCut: rgbCutLevels.r.max,
-        }
-      },
-      {
-        id: `SPH-${gBand}-${g}`,
-        name: `G: S ${gBand} ${g}`,
-        url: createChannelUrl(gBand, g),
-        frame: 'equatorial',
-        order: 20,
-        options: {
-          colormap: 'green',
-          additive: true,
-          opacity: 1.0,
-          imgFormat: SPECTRAL_CHANNEL_URL_FORMAT,
-          minCut: rgbCutLevels.g.min,
-          maxCut: rgbCutLevels.g.max,
-        }
-      },
-      {
-        id: `SPH-${bBand}-${b}`,
-        name: `B: S ${bBand} ${b}`,
-        url: createChannelUrl(bBand, b),
-        frame: 'equatorial',
-        order: 30,
-        options: {
-          colormap: 'blue',
-          additive: true,
-          opacity: 1.0,
-          imgFormat: SPECTRAL_CHANNEL_URL_FORMAT,
-          minCut: rgbCutLevels.b.min,
-          maxCut: rgbCutLevels.b.max,
-        }
+    const newLayers: SurveyOptions[] = [];
+
+    for (const ch of Object.keys(channels) as Array<keyof typeof channels>) {
+      if (!rgbVisibility[ch] || isNaN(channels[ch].num)) {
+        continue;
       }
-    ];
 
-    setLayers(newLayers);
-  }, [rChannel, gChannel, bChannel, spectralChannels, rgbCutLevels]);
+      const band = findBandForChannel(channels[ch].num);
+      if (!band) {
+        console.error(`Could not find band for channel ${channels[ch].num}`);
+        continue;
+      }
+      channels[ch].band = band;
 
-  useEffect(() => {
-    if (isRgbModeEnabled) {
-      handleLoadRgb();
+      const createChannelUrl = (band: string, channel: number) => {
+        const channelString = String(channel).padStart(3, '0');
+        return SPECTRAL_CHANNEL_URL_TEMPLATE
+          .replace('{band}', band)
+          .replace('{channel:03d}', channelString);
+      };
+
+      const layer: SurveyOptions = {
+        id: `SPH-${band}-${channels[ch].num}`,
+        name: `${ch.toUpperCase()}: S ${band} ${channels[ch].num}`,
+        url: createChannelUrl(band, channels[ch].num),
+        frame: 'equatorial',
+        order: ch === 'r' ? 10 : ch === 'g' ? 20 : 30,
+        options: {
+          colormap: ch === 'r' ? 'red' : ch === 'g' ? 'green' : 'blue',
+          imgFormat: SPECTRAL_CHANNEL_URL_FORMAT,
+          minCut: rgbCutLevels[ch].min,
+          maxCut: rgbCutLevels[ch].max,
+        }
+      };
+
+      if (ch !== 'r') {
+        layer.options!.additive = true;
+        layer.options!.opacity = 1.0;
+      }
+
+      newLayers.push(layer);
     }
-  }, [isRgbModeEnabled, handleLoadRgb]);
+    setLayers(newLayers);
+  };
 
   const handleChannelClick = (band: string, channel: number) => {
     const channelString = String(channel).padStart(3, '0');
@@ -226,36 +201,6 @@ export default function HomePage() {
     setBaseLayer(newLayer);
     setSelectedChannel({ band, channel });
   };
-
-  const handleApplyCuts = () => {
-    const minCut = parseFloat(minCutInput as string);
-    const maxCut = parseFloat(maxCutInput as string);
-
-    if (isNaN(minCut) || isNaN(maxCut)) return;
-
-    if (isRgbModeEnabled) {
-      setRgbCutLevels(prev => ({
-        ...prev,
-        [selectedRgbChannel]: { min: minCut, max: maxCut },
-      }));
-    } else {
-      setBaseLayer(prev => ({
-        ...prev,
-        options: { ...prev.options, minCut, maxCut }
-      }));
-    }
-  };
-
-  useEffect(() => {
-    if (isRgbModeEnabled) {
-      const { min, max } = rgbCutLevels[selectedRgbChannel];
-      setMinCutInput(min);
-      setMaxCutInput(max);
-    } else {
-      setMinCutInput(baseLayer.options?.minCut ?? '');
-      setMaxCutInput(baseLayer.options?.maxCut ?? '');
-    }
-  }, [isRgbModeEnabled, selectedRgbChannel, rgbCutLevels, baseLayer]);
 
   useEffect(() => {
     if (baseLayer?.options) {
@@ -355,49 +300,75 @@ export default function HomePage() {
               </label>
             </div>
             {isRgbModeEnabled && (
-              <>
-                <div className="flex space-x-2">
-                  <div>
-                    <label htmlFor="r-channel-input" className="block text-xs text-gray-400 mb-1">R</label>
-                    <input id="r-channel-input" type="number" value={rChannel} onChange={(e) => setRChannel(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white" />
+              <div className="space-y-4">
+                {(['r', 'g', 'b'] as const).map((channel) => (
+                  <div key={channel} className="p-2 border border-gray-600 rounded-md">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor={`${channel}-channel-input`} className="font-bold text-lg text-cyan-400 uppercase">{channel}</label>
+                      <div className="flex items-center">
+                        <label htmlFor={`${channel}-visible-toggle`} className="text-xs text-gray-400 mr-2">Visible</label>
+                        <input
+                          type="checkbox"
+                          id={`${channel}-visible-toggle`}
+                          checked={rgbVisibility[channel]}
+                          onChange={(e) => setRgbVisibility(prev => ({ ...prev, [channel]: e.target.checked }))}
+                          className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <label htmlFor={`${channel}-channel-input`} className="block text-xs text-gray-400 mb-1">Channel</label>
+                      <input
+                        id={`${channel}-channel-input`}
+                        type="number"
+                        value={channel === 'r' ? rChannel : channel === 'g' ? gChannel : bChannel}
+                        onChange={(e) => {
+                          if (channel === 'r') setRChannel(e.target.value);
+                          else if (channel === 'g') setGChannel(e.target.value);
+                          else setBChannel(e.target.value);
+                        }}
+                        className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                      />
+                    </div>
+                    <div className="flex items-end space-x-2 mt-2">
+                      <div className="flex-1">
+                        <label htmlFor={`${channel}-min-cut-input`} className="block text-xs text-gray-400 mb-1">Min</label>
+                        <input
+                          id={`${channel}-min-cut-input`}
+                          type="number"
+                          step="0.01"
+                          value={rgbCutLevels[channel].min}
+                          onChange={(e) => {
+                            const min = parseFloat(e.target.value);
+                            setRgbCutLevels(prev => ({ ...prev, [channel]: { ...prev[channel], min } }));
+                          }}
+                          className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label htmlFor={`${channel}-max-cut-input`} className="block text-xs text-gray-400 mb-1">Max</label>
+                        <input
+                          id={`${channel}-max-cut-input`}
+                          type="number"
+                          step="0.01"
+                          value={rgbCutLevels[channel].max}
+                          onChange={(e) => {
+                            const max = parseFloat(e.target.value);
+                            setRgbCutLevels(prev => ({ ...prev, [channel]: { ...prev[channel], max } }));
+                          }}
+                          className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label htmlFor="g-channel-input" className="block text-xs text-gray-400 mb-1">G</label>
-                    <input id="g-channel-input" type="number" value={gChannel} onChange={(e) => setGChannel(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white" />
-                  </div>
-                  <div>
-                    <label htmlFor="b-channel-input" className="block text-xs text-gray-400 mb-1">B</label>
-                    <input id="b-channel-input" type="number" value={bChannel} onChange={(e) => setBChannel(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white" />
-                  </div>
-                </div>
+                ))}
                 <button
                   onClick={handleLoadRgb}
                   className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
                 >
-                  Load RGB
+                  Apply RGB
                 </button>
-
-                <div className="pt-2">
-                  <div className="flex justify-around">
-                    {(['r', 'g', 'b'] as const).map((channel) => (
-                      <div key={channel} className="flex items-center">
-                        <input
-                          type="radio"
-                          id={`rgb-select-${channel}`}
-                          name="rgb-channel-select"
-                          value={channel}
-                          checked={selectedRgbChannel === channel}
-                          onChange={() => setSelectedRgbChannel(channel)}
-                          className="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-300"
-                        />
-                        <label htmlFor={`rgb-select-${channel}`} className="ml-2 text-sm text-white uppercase">
-                          {channel}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -431,43 +402,6 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-        <div className="border-t border-gray-700 pt-4">
-          <div className="flex items-end space-x-2">
-            <div className="flex-1">
-              <label htmlFor="min-cut-input" className="block text-xs text-gray-400 mb-1">
-                Min {isRgbModeEnabled && `(${selectedRgbChannel.toUpperCase()})`}
-              </label>
-              <input
-                id="min-cut-input"
-                type="number"
-                step="0.01"
-                value={minCutInput}
-                onChange={(e) => setMinCutInput(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
-              />
-            </div>
-            <div className="flex-1">
-              <label htmlFor="max-cut-input" className="block text-xs text-gray-400 mb-1">
-                Max {isRgbModeEnabled && `(${selectedRgbChannel.toUpperCase()})`}
-              </label>
-              <input
-                id="max-cut-input"
-                type="number"
-                step="0.01"
-                value={maxCutInput}
-                onChange={(e) => setMaxCutInput(e.target.value)}
-                className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
-              />
-            </div>
-            <button
-              onClick={handleApplyCuts}
-              title="Apply cuts"
-              className="h-9 w-9 flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white rounded text-lg"
-            >
-              ✓
-            </button>
           </div>
         </div>
       </aside>
