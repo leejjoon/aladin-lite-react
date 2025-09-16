@@ -30,6 +30,28 @@ const overlaySurveys: Omit<SurveyOptions, 'frame' | 'order'>[] = [
   // 
 ];
 
+const generateChannels = (start: number, count: number) => {
+  return Array.from({ length: count }, (_, i) => start + i);
+};
+
+const spectralChannels = {
+  B1: generateChannels(1, 17),
+  B2: generateChannels(18, 17),
+  B3: generateChannels(35, 17),
+  B4: generateChannels(52, 17),
+  B5: generateChannels(69, 17),
+  B6: generateChannels(86, 17),
+};
+
+const findBandForChannel = (channel: number): string | null => {
+  for (const band in spectralChannels) {
+    if (spectralChannels[band as keyof typeof spectralChannels].includes(channel)) {
+      return band;
+    }
+  }
+  return null;
+};
+
 export default function HomePage() {
   const [isAladinReady, setIsAladinReady] = useState(false);
   const [target, setTarget] = useState(DEFAULT_TARGET);
@@ -72,61 +94,7 @@ export default function HomePage() {
     setIsAladinReady(true);
   }, []);
 
-  useEffect(() => {
-    if (isRgbModeEnabled) {
-      // In RGB mode, layers are managed by handleLoadRgb
-      return;
-    }
-    const newLayers = [baseLayer];
-    if (isOverlayEnabled && selectedOverlay) {
-      newLayers.push({
-        ...selectedOverlay,
-        frame: 'equatorial',
-        order: 20,
-        options: {
-          ...selectedOverlay.options,
-          opacity: overlayOpacity,
-        },
-      });
-    }
-    setLayers(newLayers);
-  }, [baseLayer, isOverlayEnabled, selectedOverlay, overlayOpacity, isRgbModeEnabled]);
-
-  const generateChannels = (start: number, count: number) => {
-    return Array.from({ length: count }, (_, i) => start + i);
-  };
-
-  const spectralChannels = {
-    B1: generateChannels(1, 17),
-    B2: generateChannels(18, 17),
-    B3: generateChannels(35, 17),
-    B4: generateChannels(52, 17),
-    B5: generateChannels(69, 17),
-    B6: generateChannels(86, 17),
-  };
-
-  const handleShowRgb = () => {
-    const minCut = parseFloat(minCutInput as string);
-    const maxCut = parseFloat(maxCutInput as string);
-    const newOptions = { ...DEFAULT_HIPS_SURVEY.options };
-    if (!isNaN(minCut) && !isNaN(maxCut)) {
-      newOptions.minCut = minCut;
-      newOptions.maxCut = maxCut;
-    }
-    setBaseLayer({ ...DEFAULT_HIPS_SURVEY, options: newOptions });
-    setSelectedChannel(null);
-  };
-
-  const findBandForChannel = (channel: number): string | null => {
-    for (const band in spectralChannels) {
-      if (spectralChannels[band as keyof typeof spectralChannels].includes(channel)) {
-        return band;
-      }
-    }
-    return null;
-  };
-
-  const handleLoadRgb = () => {
+  const handleLoadRgb = useCallback(() => {
     const channels = {
       r: { num: parseInt(rChannel, 10), band: '' },
       g: { num: parseInt(gChannel, 10), band: '' },
@@ -189,6 +157,38 @@ export default function HomePage() {
     }
 
     setLayers(newLayers);
+  }, [rChannel, gChannel, bChannel, rgbCutLevels, rgbVisibility, isOverlayEnabled, selectedOverlay, overlayOpacity]);
+
+  useEffect(() => {
+    if (isRgbModeEnabled) {
+      // In RGB mode, layers are managed by handleLoadRgb
+      return;
+    }
+    const newLayers = [baseLayer];
+    if (isOverlayEnabled && selectedOverlay) {
+      newLayers.push({
+        ...selectedOverlay,
+        frame: 'equatorial',
+        order: 20,
+        options: {
+          ...selectedOverlay.options,
+          opacity: overlayOpacity,
+        },
+      });
+    }
+    setLayers(newLayers);
+  }, [baseLayer, isOverlayEnabled, selectedOverlay, overlayOpacity, isRgbModeEnabled]);
+
+  const handleShowRgb = () => {
+    const minCut = parseFloat(minCutInput as string);
+    const maxCut = parseFloat(maxCutInput as string);
+    const newOptions = { ...DEFAULT_HIPS_SURVEY.options };
+    if (!isNaN(minCut) && !isNaN(maxCut)) {
+      newOptions.minCut = minCut;
+      newOptions.maxCut = maxCut;
+    }
+    setBaseLayer({ ...DEFAULT_HIPS_SURVEY, options: newOptions });
+    setSelectedChannel(null);
   };
 
   const handleChannelClick = (band: string, channel: number) => {
@@ -235,13 +235,13 @@ export default function HomePage() {
     if (isRgbModeEnabled) {
       handleLoadRgb();
     }
-  }, [rgbVisibility, isOverlayEnabled, selectedOverlay, overlayOpacity]);
+  }, [rgbVisibility, isOverlayEnabled, selectedOverlay, overlayOpacity, handleLoadRgb, isRgbModeEnabled]);
 
   useEffect(() => {
     if (activeTab === 'rgb') {
       handleLoadRgb();
     }
-  }, [activeTab]);
+  }, [activeTab, handleLoadRgb]);
 
   useEffect(() => {
     if (baseLayer?.options) {

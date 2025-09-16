@@ -88,6 +88,7 @@ export interface AladinInstance {
   setOverlayImageLayer: (survey: any, id: string) => void;
   setProjection: (projection: string) => void;
   setFrame: (frame: string) => void;
+  addColormap: (name: string, map: any) => void;
 }
 
 export interface AladinLiteHandle {

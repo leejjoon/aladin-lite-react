@@ -18,9 +18,9 @@ const AladinViewer = ({ onReady, target, fov, onZoomChanged, layers, projection,
 
   const handleOnReady = useCallback((aladin: AladinInstance) => {
     // Define the single-color colormaps
-    aladin.setColormap('red',   [ [0,0,0], [255,0,0] ]);
-    aladin.setColormap('green', [ [0,0,0], [0,255,0] ]);
-    aladin.setColormap('blue',  [ [0,0,0], [0,0,255] ]);
+    aladin.addColormap('red',   [ [0,0,0], [255,0,0] ]);
+    aladin.addColormap('green', [ [0,0,0], [0,255,0] ]);
+    aladin.addColormap('blue',  [ [0,0,0], [0,0,255] ]);
 
     if (onReady) {
       onReady(aladin);
