@@ -45,15 +45,25 @@ export default function HomePage() {
   const [selectedOverlay, setSelectedOverlay] = useState<Omit<SurveyOptions, 'frame' | 'order'>>(overlaySurveys[1]); // Default to 2MASS Color
   const [overlayOpacity, setOverlayOpacity] = useState(0.5);
 
+  // RGB mode state
+  const [isRgbModeEnabled, setIsRgbModeEnabled] = useState(false);
+  const [rChannel, setRChannel] = useState('');
+  const [gChannel, setGChannel] = useState('');
+  const [bChannel, setBChannel] = useState('');
+
   // Local state for cut inputs, initialized from config
   const [minCutInput, setMinCutInput] = useState<string | number>(DEFAULT_HIPS_SURVEY.options?.minCut ?? '0.0');
   const [maxCutInput, setMaxCutInput] = useState<string | number>(DEFAULT_HIPS_SURVEY.options?.maxCut ?? '1.0');
 
-  const handleOnReady = useCallback(() => {
+  const handleOnReady = useCallback((aladin: any) => {
     setIsAladinReady(true);
   }, []);
 
   useEffect(() => {
+    if (isRgbModeEnabled) {
+      // In RGB mode, layers are managed by handleLoadRgb
+      return;
+    }
     const newLayers = [baseLayer];
     if (isOverlayEnabled && selectedOverlay) {
       newLayers.push({
@@ -67,7 +77,7 @@ export default function HomePage() {
       });
     }
     setLayers(newLayers);
-  }, [baseLayer, isOverlayEnabled, selectedOverlay, overlayOpacity]);
+  }, [baseLayer, isOverlayEnabled, selectedOverlay, overlayOpacity, isRgbModeEnabled]);
 
   const generateChannels = (start: number, count: number) => {
     return Array.from({ length: count }, (_, i) => start + i);
@@ -92,6 +102,71 @@ export default function HomePage() {
     }
     setBaseLayer({ ...DEFAULT_HIPS_SURVEY, options: newOptions });
     setSelectedChannel(null);
+  };
+
+  const findBandForChannel = (channel: number): string | null => {
+    for (const band in spectralChannels) {
+      if (spectralChannels[band as keyof typeof spectralChannels].includes(channel)) {
+        return band;
+      }
+    }
+    return null;
+  };
+
+  const handleLoadRgb = () => {
+    const r = parseInt(rChannel, 10);
+    const g = parseInt(gChannel, 10);
+    const b = parseInt(bChannel, 10);
+
+    if (isNaN(r) || isNaN(g) || isNaN(b)) {
+      console.error("Invalid channel numbers");
+      return;
+    }
+
+    const rBand = findBandForChannel(r);
+    const gBand = findBandForChannel(g);
+    const bBand = findBandForChannel(b);
+
+    if (!rBand || !gBand || !bBand) {
+      console.error("Could not find band for one or more channels");
+      return;
+    }
+
+    const createChannelUrl = (band: string, channel: number) => {
+      const channelString = String(channel).padStart(3, '0');
+      return SPECTRAL_CHANNEL_URL_TEMPLATE
+        .replace('{band}', band)
+        .replace('{channel:03d}', channelString);
+    };
+
+    const newLayers: SurveyOptions[] = [
+      {
+        id: `SPH-${rBand}-${r}`,
+        name: `R: S ${rBand} ${r}`,
+        url: createChannelUrl(rBand, r),
+        frame: 'equatorial',
+        order: 10,
+        options: { colormap: 'red', imgFormat: SPECTRAL_CHANNEL_URL_FORMAT }
+      },
+      {
+        id: `SPH-${gBand}-${g}`,
+        name: `G: S ${gBand} ${g}`,
+        url: createChannelUrl(gBand, g),
+        frame: 'equatorial',
+        order: 20,
+        options: { colormap: 'green', additive: true, opacity: 1.0, imgFormat: SPECTRAL_CHANNEL_URL_FORMAT }
+      },
+      {
+        id: `SPH-${bBand}-${b}`,
+        name: `B: S ${bBand} ${b}`,
+        url: createChannelUrl(bBand, b),
+        frame: 'equatorial',
+        order: 30,
+        options: { colormap: 'blue', additive: true, opacity: 1.0, imgFormat: SPECTRAL_CHANNEL_URL_FORMAT }
+      }
+    ];
+
+    setLayers(newLayers);
   };
 
   const handleChannelClick = (band: string, channel: number) => {
@@ -204,6 +279,53 @@ export default function HomePage() {
                     className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer"
                   />
                 </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* RGB Controls */}
+        <div className="border-t border-gray-700 pt-4">
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="rgb-toggle"
+                checked={isRgbModeEnabled}
+                onChange={(e) => {
+                  setIsRgbModeEnabled(e.target.checked);
+                  if (!e.target.checked) {
+                    setLayers([baseLayer]);
+                  }
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+              />
+              <label htmlFor="rgb-toggle" className="ml-2 block text-sm text-gray-300">
+                Enable RGB Mode
+              </label>
+            </div>
+            {isRgbModeEnabled && (
+              <>
+                <div className="flex space-x-2">
+                  <div>
+                    <label htmlFor="r-channel-input" className="block text-xs text-gray-400 mb-1">R</label>
+                    <input id="r-channel-input" type="number" value={rChannel} onChange={(e) => setRChannel(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white" />
+                  </div>
+                  <div>
+                    <label htmlFor="g-channel-input" className="block text-xs text-gray-400 mb-1">G</label>
+                    <input id="g-channel-input" type="number" value={gChannel} onChange={(e) => setGChannel(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white" />
+                  </div>
+                  <div>
+                    <label htmlFor="b-channel-input" className="block text-xs text-gray-400 mb-1">B</label>
+                    <input id="b-channel-input" type="number" value={bChannel} onChange={(e) => setBChannel(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white" />
+                  </div>
+                </div>
+                <button
+                  onClick={handleLoadRgb}
+                  className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+                >
+                  Load RGB
+                </button>
               </>
             )}
           </div>
