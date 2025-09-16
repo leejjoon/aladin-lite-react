@@ -39,6 +39,7 @@ export default function HomePage() {
   const [selectedChannel, setSelectedChannel] = useState<{ band: string; channel: number } | null>(null);
   const [projection, setProjection] = useState(DEFAULT_PROJECTION);
   const [cooFrame, setCooFrame] = useState(DEFAULT_COORDINATE_FRAME);
+  const [activeTab, setActiveTab] = useState('spectral');
 
   // Overlay state
   const [isOverlayEnabled, setIsOverlayEnabled] = useState(false);
@@ -279,130 +280,143 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* RGB Controls */}
-        <div className="border-t border-gray-700 pt-4">
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="rgb-toggle"
-                checked={isRgbModeEnabled}
-                onChange={(e) => {
-                  setIsRgbModeEnabled(e.target.checked);
-                  if (!e.target.checked) {
-                    setLayers([baseLayer]);
-                  }
-                }}
-                className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
-              />
-              <label htmlFor="rgb-toggle" className="ml-2 block text-sm text-gray-300">
-                Enable RGB Mode
-              </label>
-            </div>
-            {isRgbModeEnabled && (
-              <div className="space-y-4">
-                {(['r', 'g', 'b'] as const).map((channel) => (
-                  <div key={channel} className="p-2 border border-gray-600 rounded-md">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor={`${channel}-channel-input`} className="font-bold text-lg text-cyan-400 uppercase">{channel}</label>
-                      <div className="flex items-center">
-                        <label htmlFor={`${channel}-visible-toggle`} className="text-xs text-gray-400 mr-2">Visible</label>
-                        <input
-                          type="checkbox"
-                          id={`${channel}-visible-toggle`}
-                          checked={rgbVisibility[channel]}
-                          onChange={(e) => setRgbVisibility(prev => ({ ...prev, [channel]: e.target.checked }))}
-                          className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
-                        />
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <label htmlFor={`${channel}-channel-input`} className="block text-xs text-gray-400 mb-1">Channel</label>
-                      <input
-                        id={`${channel}-channel-input`}
-                        type="number"
-                        value={channel === 'r' ? rChannel : channel === 'g' ? gChannel : bChannel}
-                        onChange={(e) => {
-                          if (channel === 'r') setRChannel(e.target.value);
-                          else if (channel === 'g') setGChannel(e.target.value);
-                          else setBChannel(e.target.value);
-                        }}
-                        className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
-                      />
-                    </div>
-                    <div className="flex items-end space-x-2 mt-2">
-                      <div className="flex-1">
-                        <label htmlFor={`${channel}-min-cut-input`} className="block text-xs text-gray-400 mb-1">Min</label>
-                        <input
-                          id={`${channel}-min-cut-input`}
-                          type="number"
-                          step="0.01"
-                          value={rgbCutLevels[channel].min}
-                          onChange={(e) => {
-                            const min = parseFloat(e.target.value);
-                            setRgbCutLevels(prev => ({ ...prev, [channel]: { ...prev[channel], min } }));
-                          }}
-                          className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <label htmlFor={`${channel}-max-cut-input`} className="block text-xs text-gray-400 mb-1">Max</label>
-                        <input
-                          id={`${channel}-max-cut-input`}
-                          type="number"
-                          step="0.01"
-                          value={rgbCutLevels[channel].max}
-                          onChange={(e) => {
-                            const max = parseFloat(e.target.value);
-                            setRgbCutLevels(prev => ({ ...prev, [channel]: { ...prev[channel], max } }));
-                          }}
-                          className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
-                        />
-                      </div>
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-700">
+          <button
+            className={`flex-1 py-2 text-sm font-medium ${activeTab === 'spectral' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400 hover:text-white'}`}
+            onClick={() => {
+              setActiveTab('spectral');
+              setIsRgbModeEnabled(false);
+            }}
+          >
+            Spectral Channels
+          </button>
+          <button
+            className={`flex-1 py-2 text-sm font-medium ${activeTab === 'rgb' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400 hover:text-white'}`}
+            onClick={() => {
+              setActiveTab('rgb');
+              setIsRgbModeEnabled(true);
+            }}
+          >
+            RGB Mode
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className="pt-4 flex-grow">
+          {activeTab === 'spectral' && (
+            <div>
+              <h2 className="text-lg font-bold text-cyan-400">Spectral Channels</h2>
+              <div className="grid grid-cols-6 gap-2 mt-4">
+                {Object.keys(spectralChannels).map((band) => (
+                  <div key={band}>
+                    <div className="font-bold text-center text-cyan-500 pb-2">{band}</div>
+                    <div className="flex flex-col space-y-1">
+                      {spectralChannels[band as keyof typeof spectralChannels].map((channel) => {
+                        const isSelected = selectedChannel?.band === band && selectedChannel?.channel === channel;
+                        const channelInfo = channelMinMax[String(channel) as keyof typeof channelMinMax];
+                        const tooltip = channelInfo ? `${channelInfo[0].toFixed(3)}-${channelInfo[1].toFixed(3)}` : '';
+                        return (
+                          <Tooltip key={channel} text={tooltip}>
+                            <button
+                              className={`w-full text-sm py-1 px-2 rounded ${
+                                isSelected
+                                  ? 'bg-cyan-500 text-white'
+                                  : 'bg-gray-700 hover:bg-gray-600 text-white'
+                              }`}
+                              onClick={() => handleChannelClick(band, channel)}
+                            >
+                              {channel}
+                            </button>
+                          </Tooltip>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
-                <button
-                  onClick={handleLoadRgb}
-                  className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-                >
-                  Apply RGB
-                </button>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
 
-        <div className="flex-grow border-t border-gray-700 pt-4">
-          <h2 className="text-lg font-bold text-cyan-400">Spectral Channels</h2>
-          <div className="grid grid-cols-6 gap-2 mt-4">
-            {Object.keys(spectralChannels).map((band) => (
-              <div key={band}>
-                <div className="font-bold text-center text-cyan-500 pb-2">{band}</div>
-                <div className="flex flex-col space-y-1">
-                  {spectralChannels[band as keyof typeof spectralChannels].map((channel) => {
-                    const isSelected = selectedChannel?.band === band && selectedChannel?.channel === channel;
-                    const channelInfo = channelMinMax[String(channel) as keyof typeof channelMinMax];
-                    const tooltip = channelInfo ? `${channelInfo[0].toFixed(3)}-${channelInfo[1].toFixed(3)}` : '';
-                    return (
-                      <Tooltip key={channel} text={tooltip}>
-                        <button
-                          className={`w-full text-sm py-1 px-2 rounded ${
-                            isSelected
-                              ? 'bg-cyan-500 text-white'
-                              : 'bg-gray-700 hover:bg-gray-600 text-white'
-                          }`}
-                          onClick={() => handleChannelClick(band, channel)}
-                        >
-                          {channel}
-                        </button>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
+          {activeTab === 'rgb' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-4 gap-x-2 gap-y-3 items-center">
+                {/* Headers */}
+                <div />
+                <div className="font-bold text-lg text-center text-cyan-400">R</div>
+                <div className="font-bold text-lg text-center text-cyan-400">G</div>
+                <div className="font-bold text-lg text-center text-cyan-400">B</div>
+
+                {/* Channel Row */}
+                <label className="text-xs text-gray-400">Channel</label>
+                {(['r', 'g', 'b'] as const).map((channel) => (
+                  <input
+                    key={channel}
+                    type="number"
+                    value={channel === 'r' ? rChannel : channel === 'g' ? gChannel : bChannel}
+                    onChange={(e) => {
+                      if (channel === 'r') setRChannel(e.target.value);
+                      else if (channel === 'g') setGChannel(e.target.value);
+                      else setBChannel(e.target.value);
+                    }}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                  />
+                ))}
+
+                {/* Min Cut Row */}
+                <label className="text-xs text-gray-400">Min</label>
+                {(['r', 'g', 'b'] as const).map((channel) => (
+                  <input
+                    key={channel}
+                    type="number"
+                    step="0.01"
+                    value={rgbCutLevels[channel].min}
+                    onChange={(e) => {
+                      const min = parseFloat(e.target.value);
+                      setRgbCutLevels(prev => ({ ...prev, [channel]: { ...prev[channel], min } }));
+                    }}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                  />
+                ))}
+
+                {/* Max Cut Row */}
+                <label className="text-xs text-gray-400">Max</label>
+                {(['r', 'g', 'b'] as const).map((channel) => (
+                  <input
+                    key={channel}
+                    type="number"
+                    step="0.01"
+                    value={rgbCutLevels[channel].max}
+                    onChange={(e) => {
+                      const max = parseFloat(e.target.value);
+                      setRgbCutLevels(prev => ({ ...prev, [channel]: { ...prev[channel], max } }));
+                    }}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                  />
+                ))}
+
+                {/* Visibility Row */}
+                <label className="text-xs text-gray-400">Visible</label>
+                {(['r', 'g', 'b'] as const).map((channel) => (
+                  <div key={channel} className="flex justify-center">
+                    <input
+                      type="checkbox"
+                      checked={rgbVisibility[channel]}
+                      onChange={(e) => setRgbVisibility(prev => ({ ...prev, [channel]: e.target.checked }))}
+                      className="h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+
+              <button
+                onClick={handleLoadRgb}
+                className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+              >
+                Apply RGB
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
