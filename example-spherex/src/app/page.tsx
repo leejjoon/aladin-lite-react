@@ -13,6 +13,7 @@ import {
   DEFAULT_TARGET
 } from '@/config';
 import Tooltip from '@/components/Tooltip';
+import InfoModal from '@/components/InfoModal';
 import { channelMinMax } from '@/channel_definition';
 
 const AladinViewer = dynamic(() => import('@/components/AladinViewer'), {
@@ -48,6 +49,7 @@ export default function HomePage() {
   // Local state for cut inputs, initialized from config
   const [minCutInput, setMinCutInput] = useState<string | number>(DEFAULT_HIPS_SURVEY.options?.minCut ?? '0.0');
   const [maxCutInput, setMaxCutInput] = useState<string | number>(DEFAULT_HIPS_SURVEY.options?.maxCut ?? '1.0');
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const handleOnReady = useCallback(() => {
     setIsAladinReady(true);
@@ -143,8 +145,19 @@ export default function HomePage() {
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Left Sidebar */}
       <aside className="w-72 bg-gray-800 p-4 flex flex-col space-y-6 overflow-y-auto custom-scrollbar">
-        <div>
+        <div className="flex justify-between items-center">
           <h2 className="text-lg font-bold text-cyan-400">Surveys</h2>
+          <button
+            onClick={() => setIsInfoModalOpen(true)}
+            className="text-cyan-400 hover:text-cyan-200"
+            title="Survey Information"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+        </div>
+        <div>
           <p className="text-sm text-gray-400 mt-2">Last Survey ID: 2025W25_2A</p>
           <button
             className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
@@ -289,6 +302,7 @@ export default function HomePage() {
           />
         </div>
       </main>
+      <InfoModal isOpen={isInfoModalOpen} onClose={() => setIsInfoModalOpen(false)} />
     </div>
   );
 }
