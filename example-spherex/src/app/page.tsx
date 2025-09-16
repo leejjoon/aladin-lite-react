@@ -50,6 +50,12 @@ export default function HomePage() {
   const [rChannel, setRChannel] = useState('');
   const [gChannel, setGChannel] = useState('');
   const [bChannel, setBChannel] = useState('');
+  const [selectedRgbChannel, setSelectedRgbChannel] = useState<'r' | 'g' | 'b'>('r');
+  const [rgbCutLevels, setRgbCutLevels] = useState({
+    r: { min: 0.0, max: 1.0 },
+    g: { min: 0.0, max: 1.0 },
+    b: { min: 0.0, max: 1.0 },
+  });
 
   // Local state for cut inputs, initialized from config
   const [minCutInput, setMinCutInput] = useState<string | number>(DEFAULT_HIPS_SURVEY.options?.minCut ?? '0.0');
@@ -113,7 +119,7 @@ export default function HomePage() {
     return null;
   };
 
-  const handleLoadRgb = () => {
+  const handleLoadRgb = useCallback(() => {
     const r = parseInt(rChannel, 10);
     const g = parseInt(gChannel, 10);
     const b = parseInt(bChannel, 10);
@@ -146,7 +152,12 @@ export default function HomePage() {
         url: createChannelUrl(rBand, r),
         frame: 'equatorial',
         order: 10,
-        options: { colormap: 'red', imgFormat: SPECTRAL_CHANNEL_URL_FORMAT }
+        options: {
+          colormap: 'red',
+          imgFormat: SPECTRAL_CHANNEL_URL_FORMAT,
+          minCut: rgbCutLevels.r.min,
+          maxCut: rgbCutLevels.r.max,
+        }
       },
       {
         id: `SPH-${gBand}-${g}`,
@@ -154,7 +165,14 @@ export default function HomePage() {
         url: createChannelUrl(gBand, g),
         frame: 'equatorial',
         order: 20,
-        options: { colormap: 'green', additive: true, opacity: 1.0, imgFormat: SPECTRAL_CHANNEL_URL_FORMAT }
+        options: {
+          colormap: 'green',
+          additive: true,
+          opacity: 1.0,
+          imgFormat: SPECTRAL_CHANNEL_URL_FORMAT,
+          minCut: rgbCutLevels.g.min,
+          maxCut: rgbCutLevels.g.max,
+        }
       },
       {
         id: `SPH-${bBand}-${b}`,
@@ -162,12 +180,25 @@ export default function HomePage() {
         url: createChannelUrl(bBand, b),
         frame: 'equatorial',
         order: 30,
-        options: { colormap: 'blue', additive: true, opacity: 1.0, imgFormat: SPECTRAL_CHANNEL_URL_FORMAT }
+        options: {
+          colormap: 'blue',
+          additive: true,
+          opacity: 1.0,
+          imgFormat: SPECTRAL_CHANNEL_URL_FORMAT,
+          minCut: rgbCutLevels.b.min,
+          maxCut: rgbCutLevels.b.max,
+        }
       }
     ];
 
     setLayers(newLayers);
-  };
+  }, [rChannel, gChannel, bChannel, spectralChannels, rgbCutLevels]);
+
+  useEffect(() => {
+    if (isRgbModeEnabled) {
+      handleLoadRgb();
+    }
+  }, [isRgbModeEnabled, handleLoadRgb]);
 
   const handleChannelClick = (band: string, channel: number) => {
     const channelString = String(channel).padStart(3, '0');
@@ -199,13 +230,32 @@ export default function HomePage() {
   const handleApplyCuts = () => {
     const minCut = parseFloat(minCutInput as string);
     const maxCut = parseFloat(maxCutInput as string);
-    if (!isNaN(minCut) && !isNaN(maxCut)) {
+
+    if (isNaN(minCut) || isNaN(maxCut)) return;
+
+    if (isRgbModeEnabled) {
+      setRgbCutLevels(prev => ({
+        ...prev,
+        [selectedRgbChannel]: { min: minCut, max: maxCut },
+      }));
+    } else {
       setBaseLayer(prev => ({
         ...prev,
         options: { ...prev.options, minCut, maxCut }
       }));
     }
   };
+
+  useEffect(() => {
+    if (isRgbModeEnabled) {
+      const { min, max } = rgbCutLevels[selectedRgbChannel];
+      setMinCutInput(min);
+      setMaxCutInput(max);
+    } else {
+      setMinCutInput(baseLayer.options?.minCut ?? '');
+      setMaxCutInput(baseLayer.options?.maxCut ?? '');
+    }
+  }, [isRgbModeEnabled, selectedRgbChannel, rgbCutLevels, baseLayer]);
 
   useEffect(() => {
     if (baseLayer?.options) {
@@ -326,6 +376,27 @@ export default function HomePage() {
                 >
                   Load RGB
                 </button>
+
+                <div className="pt-2">
+                  <div className="flex justify-around">
+                    {(['r', 'g', 'b'] as const).map((channel) => (
+                      <div key={channel} className="flex items-center">
+                        <input
+                          type="radio"
+                          id={`rgb-select-${channel}`}
+                          name="rgb-channel-select"
+                          value={channel}
+                          checked={selectedRgbChannel === channel}
+                          onChange={() => setSelectedRgbChannel(channel)}
+                          className="h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-300"
+                        />
+                        <label htmlFor={`rgb-select-${channel}`} className="ml-2 text-sm text-white uppercase">
+                          {channel}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -365,7 +436,9 @@ export default function HomePage() {
         <div className="border-t border-gray-700 pt-4">
           <div className="flex items-end space-x-2">
             <div className="flex-1">
-              <label htmlFor="min-cut-input" className="block text-xs text-gray-400 mb-1">Min</label>
+              <label htmlFor="min-cut-input" className="block text-xs text-gray-400 mb-1">
+                Min {isRgbModeEnabled && `(${selectedRgbChannel.toUpperCase()})`}
+              </label>
               <input
                 id="min-cut-input"
                 type="number"
@@ -376,7 +449,9 @@ export default function HomePage() {
               />
             </div>
             <div className="flex-1">
-              <label htmlFor="max-cut-input" className="block text-xs text-gray-400 mb-1">Max</label>
+              <label htmlFor="max-cut-input" className="block text-xs text-gray-400 mb-1">
+                Max {isRgbModeEnabled && `(${selectedRgbChannel.toUpperCase()})`}
+              </label>
               <input
                 id="max-cut-input"
                 type="number"
