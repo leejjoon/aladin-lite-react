@@ -175,6 +175,19 @@ export default function HomePage() {
 
       newLayers.push(layer);
     }
+
+    if (isOverlayEnabled && selectedOverlay) {
+      newLayers.push({
+        ...selectedOverlay,
+        frame: 'equatorial',
+        order: 40,
+        options: {
+          ...selectedOverlay.options,
+          opacity: overlayOpacity,
+        },
+      });
+    }
+
     setLayers(newLayers);
   };
 
@@ -222,7 +235,13 @@ export default function HomePage() {
     if (isRgbModeEnabled) {
       handleLoadRgb();
     }
-  }, [rgbVisibility]);
+  }, [rgbVisibility, isOverlayEnabled, selectedOverlay, overlayOpacity]);
+
+  useEffect(() => {
+    if (activeTab === 'rgb') {
+      handleLoadRgb();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (baseLayer?.options) {
