@@ -136,7 +136,7 @@ export default function HomePage() {
     const newLayers: SurveyOptions[] = [];
 
     for (const ch of Object.keys(channels) as Array<keyof typeof channels>) {
-      if (!rgbVisibility[ch] || isNaN(channels[ch].num)) {
+      if (isNaN(channels[ch].num)) {
         continue;
       }
 
@@ -165,12 +165,12 @@ export default function HomePage() {
           imgFormat: SPECTRAL_CHANNEL_URL_FORMAT,
           minCut: rgbCutLevels[ch].min,
           maxCut: rgbCutLevels[ch].max,
+          opacity: rgbVisibility[ch] ? 1.0 : 0.0,
         }
       };
 
       if (ch !== 'r') {
         layer.options!.additive = true;
-        layer.options!.opacity = 1.0;
       }
 
       newLayers.push(layer);
