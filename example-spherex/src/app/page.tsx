@@ -218,7 +218,7 @@ export default function HomePage() {
                 <div className="flex flex-col space-y-1">
                   {spectralChannels[band as keyof typeof spectralChannels].map((channel) => {
                     const isSelected = selectedChannel?.band === band && selectedChannel?.channel === channel;
-                    const channelInfo = channelMinMax[channel as keyof typeof channelMinMax];
+                    const channelInfo = channelMinMax[String(channel) as keyof typeof channelMinMax];
                     const tooltip = channelInfo ? `${channelInfo[0].toFixed(3)}-${channelInfo[1].toFixed(3)}` : '';
                     return (
                       <Tooltip key={channel} text={tooltip}>

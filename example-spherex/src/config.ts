@@ -5,13 +5,16 @@ export const DEFAULT_PROJECTION = 'MOL';
 export const DEFAULT_COORDINATE_FRAME = 'GAL';
 export const DEFAULT_TARGET = 'Sgr a*';
 
-const API_BASE_URL = 'http://localhost:8099';
+// const API_BASE_URL = 'http://localhost:8099';
 // const API_BASE_URL = 'http://localhost:3001/rendered';
+const API_BASE_URL = 'https://spherex-hips-data.web.app';
+// const API_BASE_URL = 'https://spherex-hips-channelmaps.firebaseapp.com';
+
 
 export const DEFAULT_HIPS_SURVEY: SurveyOptions = {
   id: 'SPX-Coverage',
   name: 'SPHEREx Coverage',
-  url: `${API_BASE_URL}/hips_nexp_fk5_combined_upto_2025W31_2A_RGB/`,
+  url: `${API_BASE_URL}/hips_rgb`,
   frame: 'equatorial',
   options: {
     minCut: 0.0,
