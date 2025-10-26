@@ -448,6 +448,34 @@ export default function HomePage() {
 
           {activeTab === 'linemaps' && (
             <div className="flex flex-col h-full">
+              <div className="flex space-x-2 mb-4">
+                <div className="flex-1">
+                  <label htmlFor="min-cut-input" className="block text-xs text-gray-400 mb-1">Min Cut</label>
+                  <input
+                    id="min-cut-input"
+                    type="number"
+                    step="0.1"
+                    value={minCutInput}
+                    onChange={(e) => setMinCutInput(e.target.value)}
+                    onBlur={handleSpectralCutLevelsChange}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSpectralCutLevelsChange()}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="max-cut-input" className="block text-xs text-gray-400 mb-1">Max Cut</label>
+                  <input
+                    id="max-cut-input"
+                    type="number"
+                    step="0.1"
+                    value={maxCutInput}
+                    onChange={(e) => setMaxCutInput(e.target.value)}
+                    onBlur={handleSpectralCutLevelsChange}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSpectralCutLevelsChange()}
+                    className="w-full bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm text-white"
+                  />
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 {LINEMAP_NAMES.map((lineName) => {
                   const isSelected = selectedLinemap === lineName;

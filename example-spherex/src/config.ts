@@ -11,8 +11,9 @@ export const LAST_SURVEY_ID = '2025W40_2B';
 const API_BASE_URL = 'https://spherex-hips-data.web.app';
 export const SPECTRAL_CHANNEL_URL_TEMPLATE = `${API_BASE_URL}/SPHx_Allsky_L2_{band}_C{channel:03d}_N2048`;
 
-const API_BASE_URL_LINE = 'http://localhost:43863';
-export const LINEMAP_URL_TEMPLATE = `${API_BASE_URL_LINE}/lines/SPHx_Allsky_L2_{line_name}/`;
+// const API_BASE_URL_LINE = 'http://localhost:43863';
+const API_BASE_URL_LINE =  API_BASE_URL;
+export const LINEMAP_URL_TEMPLATE = `${API_BASE_URL_LINE}/lines/SPHx_Allsky_L2_{line_name}`;
 // const API_BASE_URL = 'https://spherex-hips-channelmaps.firebaseapp.com';
 
 
