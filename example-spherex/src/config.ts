@@ -9,6 +9,10 @@ export const LAST_SURVEY_ID = '2025W40_2B';
 // const API_BASE_URL = 'http://localhost:8099';
 // const API_BASE_URL = 'http://localhost:3001/rendered';
 const API_BASE_URL = 'https://spherex-hips-data.web.app';
+export const SPECTRAL_CHANNEL_URL_TEMPLATE = `${API_BASE_URL}/SPHx_Allsky_L2_{band}_C{channel:03d}_N2048`;
+
+const API_BASE_URL_LINE = 'http://localhost:43863';
+export const LINEMAP_URL_TEMPLATE = `${API_BASE_URL_LINE}/lines/SPHx_Allsky_L2_{line_name}/`;
 // const API_BASE_URL = 'https://spherex-hips-channelmaps.firebaseapp.com';
 
 
@@ -27,5 +31,15 @@ export const DEFAULT_HIPS_SURVEY: SurveyOptions = {
 // {band} and {channel} are placeholders.
 // {channel:03d} will format the channel number with leading zeros (e.g., 2 -> 002).
 // export const SPECTRAL_CHANNEL_URL_TEMPLATE = 'http://localhost:8099/allsky_channel_maps_2048/20250905/rendered/SPHx_Allsky_L2_{band}_C{channel:03d}_N2048';
-export const SPECTRAL_CHANNEL_URL_TEMPLATE = `${API_BASE_URL}/SPHx_Allsky_L2_{band}_C{channel:03d}_N2048`;
 export const SPECTRAL_CHANNEL_URL_FORMAT = 'fits';
+
+export const LINEMAP_NAMES = [
+  "H₂ 1-0 Q(1)",
+  "H₂ 1-0 S(1)",
+  "Pa α",
+  "Br β",
+  "PAH",
+  "Br α",
+  "Pf β",
+];
+

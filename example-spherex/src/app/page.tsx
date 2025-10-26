@@ -11,7 +11,9 @@ import {
   DEFAULT_PROJECTION,
   DEFAULT_COORDINATE_FRAME,
   DEFAULT_TARGET,
-  LAST_SURVEY_ID
+  LAST_SURVEY_ID,
+  LINEMAP_URL_TEMPLATE,
+  LINEMAP_NAMES,
 } from '@/config';
 import Tooltip from '@/components/Tooltip';
 import { channelMinMax } from '@/channel_definition';
@@ -60,6 +62,7 @@ export default function HomePage() {
   const [layers, setLayers] = useState<SurveyOptions[]>([DEFAULT_HIPS_SURVEY]);
   const [baseLayer, setBaseLayer] = useState<SurveyOptions>(DEFAULT_HIPS_SURVEY);
   const [selectedChannel, setSelectedChannel] = useState<{ band: string; channel: number } | null>(null);
+  const [selectedLinemap, setSelectedLinemap] = useState<string | null>(null);
   const [projection, setProjection] = useState(DEFAULT_PROJECTION);
   const [cooFrame, setCooFrame] = useState(DEFAULT_COORDINATE_FRAME);
   const [activeTab, setActiveTab] = useState('spectral');
@@ -190,6 +193,7 @@ export default function HomePage() {
     }
     setBaseLayer({ ...DEFAULT_HIPS_SURVEY, options: newOptions });
     setSelectedChannel(null);
+    setSelectedLinemap(null);
   };
 
   const handleChannelClick = (band: string, channel: number) => {
@@ -217,6 +221,33 @@ export default function HomePage() {
 
     setBaseLayer(newLayer);
     setSelectedChannel({ band, channel });
+    setSelectedLinemap(null);
+  };
+
+  const handleLinemapClick = (lineName: string) => {
+    // const url = LINEMAP_URL_TEMPLATE.replace('{line_name}', lineName.replace(/ /g, '_'));
+    const url = LINEMAP_URL_TEMPLATE.replace('{line_name}', lineName);
+
+    const minCut = parseFloat(minCutInput as string);
+    const maxCut = parseFloat(maxCutInput as string);
+    const newOptions: SurveyOptions['options'] = { imgFormat: SPECTRAL_CHANNEL_URL_FORMAT };
+    if (!isNaN(minCut) && !isNaN(maxCut)) {
+      newOptions.minCut = minCut;
+      newOptions.maxCut = maxCut;
+    }
+
+    const newLayer: SurveyOptions = {
+      id: `SPH-Line-${lineName}`,
+      name: `Line ${lineName}`,
+      url,
+      frame: 'equatorial',
+      order: 10,
+      options: newOptions,
+    };
+
+    setBaseLayer(newLayer);
+    setSelectedLinemap(lineName);
+    setSelectedChannel(null);
   };
 
   const handleSpectralCutLevelsChange = () => {
@@ -333,6 +364,15 @@ export default function HomePage() {
             Spectral Channels
           </button>
           <button
+            className={`flex-1 py-2 text-sm font-medium ${activeTab === 'linemaps' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400 hover:text-white'}`}
+            onClick={() => {
+              setActiveTab('linemaps');
+              setIsRgbModeEnabled(false);
+            }}
+          >
+            Line Maps
+          </button>
+          <button
             className={`flex-1 py-2 text-sm font-medium ${activeTab === 'rgb' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-gray-400 hover:text-white'}`}
             onClick={() => {
               setActiveTab('rgb');
@@ -402,6 +442,29 @@ export default function HomePage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'linemaps' && (
+            <div className="flex flex-col h-full">
+              <div className="grid grid-cols-2 gap-2">
+                {LINEMAP_NAMES.map((lineName) => {
+                  const isSelected = selectedLinemap === lineName;
+                  return (
+                    <button
+                      key={lineName}
+                      className={`w-full text-sm py-2 px-2 rounded ${
+                        isSelected
+                          ? 'bg-cyan-500 text-white'
+                          : 'bg-gray-700 hover:bg-gray-600 text-white'
+                      }`}
+                      onClick={() => handleLinemapClick(lineName)}
+                    >
+                      {lineName}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
