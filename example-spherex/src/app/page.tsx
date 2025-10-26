@@ -10,7 +10,8 @@ import {
   DEFAULT_FOV,
   DEFAULT_PROJECTION,
   DEFAULT_COORDINATE_FRAME,
-  DEFAULT_TARGET
+  DEFAULT_TARGET,
+  LAST_SURVEY_ID
 } from '@/config';
 import Tooltip from '@/components/Tooltip';
 import { channelMinMax } from '@/channel_definition';
@@ -256,7 +257,7 @@ export default function HomePage() {
       <aside className="w-72 bg-gray-800 p-4 flex flex-col space-y-6 overflow-y-auto custom-scrollbar">
         <div>
           <h2 className="text-lg font-bold text-cyan-400">Surveys</h2>
-          <p className="text-sm text-gray-400 mt-2">Last Survey ID: 2025W25_2A</p>
+          <p className="text-sm text-gray-400 mt-2">Last Survey ID: {LAST_SURVEY_ID}</p>
           <button
             className="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
             onClick={handleShowRgb}

@@ -4,6 +4,7 @@ export const DEFAULT_FOV = 360;
 export const DEFAULT_PROJECTION = 'MOL';
 export const DEFAULT_COORDINATE_FRAME = 'GAL';
 export const DEFAULT_TARGET = 'Sgr a*';
+export const LAST_SURVEY_ID = '2025W40_2B';
 
 // const API_BASE_URL = 'http://localhost:8099';
 // const API_BASE_URL = 'http://localhost:3001/rendered';
